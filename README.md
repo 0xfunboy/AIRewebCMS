@@ -1,0 +1,74 @@
+# AIRewebCMS
+
+A lightweight PHP + MySQL CMS powering the AIRewardrop agent website. The system replaces the former React front-end with server-rendered views, an admin dashboard, WalletConnect-based authentication, and database-driven content modules for products, blog posts, roadmap milestones, partners, social proof, and more.
+
+## Features
+- **Wallet-based admin login** using WalletConnect v2 with nonce validation and session tracking.
+- **Modular admin dashboard** covering Products, Agents, Partners, Team, Blog Posts, Social Proof, Roadmap (phases + tracks), and global Settings.
+- **Public site pages** rendered through PHP templates that mirror the original Tailwind-styled marketing content.
+- **Automatic seed importer** populates empty tables from `database/seed-data.php` on first run.
+- **MySQL migrations** in `database/schema.sql` aligned with the CMS features (admins, sessions, content tables, etc.).
+- **Extensible service layer** (`app/Services`) for additional content modules and integrations.
+
+## Project Structure
+```
+AIRewebCMS/
+├── app/                # Core framework (router, controllers, services, middleware, views)
+├── database/           # Schema + seed data
+├── public/             # Web root, router front controllers, assets
+├── scripts/            # CLI tools (seed importer)
+├── storage/            # Runtime storage (logs, cache)
+├── .env.example.php    # Environment configuration template
+└── README.md
+```
+
+## Requirements
+- PHP 8.1 or newer with PDO MySQL extension
+- MySQL 8.0 (or compatible)
+- OpenSSL extension (for random bytes) and GMP extension (for signature verification)
+- Web server capable of serving `public/` as document root (Apache/Nginx) or PHP built-in server for local use
+
+## Installation
+1. **Clone or copy** this directory to your server.
+2. **Create the environment file:**
+   ```bash
+   cp .env.example.php .env.php
+   ```
+   Edit the new file with your production database credentials, WalletConnect settings, and app metadata.
+3. **Set writable permissions** on the storage directories:
+   ```bash
+   chmod -R 775 storage
+   ```
+   (Adjust owners/groups to match your web server user.)
+4. **Create the database (and user, if needed)** and run the schema migrations. Example MySQL session:
+   ```sql
+   CREATE DATABASE aireweb DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE USER 'aire_user'@'localhost' IDENTIFIED BY 'change_me';
+   GRANT ALL PRIVILEGES ON aireweb.* TO 'aire_user'@'localhost';
+   FLUSH PRIVILEGES;
+   ```
+   Then load the schema:
+   ```bash
+   mysql -u aire_user -p aireweb < database/schema.sql
+   ```
+5. *(Optional but recommended)* Import the starter content from the TypeScript constants:
+   ```bash
+   php scripts/import.php
+   ```
+   The CMS also ships with an automatic importer that seeds tables from `database/seed-data.php` the first time the app boots if they are empty.
+6. **Serve the site**:
+   - Local testing: `php -S 127.0.0.1:8000 -t public public/router.php`
+   - Production: point your web server’s document root to the `public/` directory and ensure `public/router.php` handles requests.
+
+## Usage
+- Visit `/login` to access the admin area. Configure the allowed wallet addresses in `.env.php`.
+- The dashboard provides CRUD interfaces for all public-facing modules. Saving changes updates the MySQL tables consumed by the public pages.
+- Public routes (e.g., `/products`, `/roadmap`, `/tokenomics`, `/press`) automatically reflect database content.
+
+## Deployment Notes
+- Ensure HTTPS is enforced so session cookies use the `Secure` flag.
+- Rotate and secure the application key and WalletConnect credentials in `.env.php`.
+- Monitor `storage/logs/app.log` for runtime errors.
+- Regularly back up the MySQL database and storage directory.
+
+Happy shipping!
