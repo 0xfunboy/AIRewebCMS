@@ -9,6 +9,7 @@ A lightweight PHP + MySQL CMS powering the AIRewardrop agent website. The system
 - **Automatic seed importer** populates empty tables from `database/seed-data.php` on first run.
 - **MySQL migrations** in `database/schema.sql` aligned with the CMS features (admins, sessions, content tables, etc.).
 - **Extensible service layer** (`app/Services`) for additional content modules and integrations.
+- **Inline admin editing**: authenticated admins can toggle an in-page editing mode, adjust texts/URLs/images, and upload media directly from the frontend.
 
 ## Project Structure
 ```
@@ -64,6 +65,23 @@ AIRewebCMS/
 7. **Serve the site**:
    - Local testing: `php -S 127.0.0.1:8000 -t public public/router.php`
    - Production: point your web server’s document root to the `public/` directory and ensure `public/router.php` handles requests.
+
+## Inline Admin Editing
+Authenticated admins see a toolbar on every public page:
+
+1. **Toggle Modalità Admin** – enables/disables the inline editing overlay (state stored in session).
+2. **Editable elements** – when active, blocks marked with `data-model`, `data-key`, and optional `data-id` expose action buttons:
+   - **Edit / Save / Cancel** for plain text.
+   - **Edit HTML** opens a modal editor for rich text.
+   - **Replace** triggers the secure upload flow for images (png, jpg, jpeg, webp, svg – 5 MB max) saved under `public/uploads/YYYY/MM/`.
+3. **API behind the scenes**
+   - `POST /admin/api/update-field` with JSON payload `{ model, key, id?, value, csrf }`.
+   - `POST /admin/api/upload-image` accepts multipart data with the same metadata.
+   - Responses always include an updated CSRF token. Every change is logged in the `audit_log` table with the admin wallet address.
+4. **Extending inline editing**
+   - Wrap new fields with `<?= \App\Support\AdminMode::dataAttrs('model', 'field', $id); ?>`.
+   - Whitelist the pair in `App\Controllers\Admin\AdminInlineController::$modelMap`.
+   - Admin assets are loaded only when the user is authenticated, so regular visitors see the original markup untouched.
 
 ## Usage
 - Visit `/login` to access the admin area. Configure the allowed wallet addresses in `.env.php`.
