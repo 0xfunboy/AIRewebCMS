@@ -56,7 +56,12 @@ AIRewebCMS/
    php scripts/import.php
    ```
    The CMS also ships with an automatic importer that seeds tables from `database/seed-data.php` the first time the app boots if they are empty.
-6. **Serve the site**:
+6. **Esegui il wizard di installazione** (solo la prima volta):
+   - Carica il progetto sul server.
+   - Visita `https://tuodominio/install.php` e clicca “Avvia installazione”. Lo script crea le tabelle e importa i seed.
+   - Alla fine elimina o rinomina `public/install.php` per sicurezza.
+
+7. **Serve the site**:
    - Local testing: `php -S 127.0.0.1:8000 -t public public/router.php`
    - Production: point your web server’s document root to the `public/` directory and ensure `public/router.php` handles requests.
 
