@@ -1,6 +1,8 @@
 <?php
 /** @var array $partners */
 
+use App\Support\AdminMode;
+
 $active = array_values(array_filter($partners, fn ($partner) => ($partner['status'] ?? '') === 'Active'));
 $discussion = array_values(array_filter($partners, fn ($partner) => ($partner['status'] ?? '') === 'In Discussion'));
 ?>
@@ -17,9 +19,9 @@ $discussion = array_values(array_filter($partners, fn ($partner) => ($partner['s
         <?php foreach ($active as $index => $partner): ?>
             <div data-animate data-animate-delay="<?= $index * 100; ?>">
                 <a href="<?= htmlspecialchars($partner['url'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" class="block bg-glass border border-stroke rounded-lg p-6 text-center hover:border-pri/50 transition-all duration-300 transform hover:-translate-y-1 shadow-deep backdrop-blur-lg h-full">
-                    <img loading="lazy" src="<?= htmlspecialchars($partner['logo_url'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?>" class="h-16 mx-auto mb-4 object-contain" />
-                    <h3 class="font-bold text-lg text-acc"><?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?></h3>
-                    <p class="text-muted text-sm mt-2 leading-relaxed"><?= htmlspecialchars($partner['summary'], ENT_QUOTES, 'UTF-8'); ?></p>
+                    <img loading="lazy" src="<?= htmlspecialchars($partner['logo_url'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?>" class="h-16 mx-auto mb-4 object-contain"<?= AdminMode::dataAttrs('partners', 'logo_url', (string)$partner['id'], 'image'); ?>>
+                    <h3 class="font-bold text-lg text-acc"<?= AdminMode::dataAttrs('partners', 'name', (string)$partner['id']); ?><?= AdminMode::isAdmin() ? ' class="admin-editable-text"' : ''; ?>><?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?></h3>
+                    <p class="text-muted text-sm mt-2 leading-relaxed"<?= AdminMode::dataAttrs('partners', 'summary', (string)$partner['id']); ?><?= AdminMode::isAdmin() ? ' class="admin-editable-text"' : ''; ?>><?= htmlspecialchars($partner['summary'], ENT_QUOTES, 'UTF-8'); ?></p>
                 </a>
             </div>
         <?php endforeach; ?>
@@ -31,13 +33,13 @@ $discussion = array_values(array_filter($partners, fn ($partner) => ($partner['s
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl mx-auto">
                 <?php foreach ($discussion as $index => $partner): ?>
                     <div data-animate data-animate-delay="<?= $index * 100; ?>">
-                        <a href="<?= htmlspecialchars($partner['url'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" class="block bg-glass border border-dashed border-stroke rounded-lg p-6 text-center hover:border-pri/50 transition-all duration-300 transform hover:-translate-y-1 shadow-deep backdrop-blur-lg h-full">
-                            <img loading="lazy" src="<?= htmlspecialchars($partner['logo_url'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?>" class="h-16 mx-auto mb-4 object-contain" />
+                        <a href="<?= htmlspecialchars($partner['url'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" class="block bg-glass border border-dashed border-stroke rounded-lg p-6 text-center hover:border-pri/50 transition-all duration-300 transform hover:-translate-y-1 shadow-deep backdrop-blur-lg h-full"<?= AdminMode::dataAttrs('partners', 'url', (string)$partner['id'], 'url'); ?>>
+                            <img loading="lazy" src="<?= htmlspecialchars($partner['logo_url'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?>" class="h-16 mx-auto mb-4 object-contain"<?= AdminMode::dataAttrs('partners', 'logo_url', (string)$partner['id'], 'image'); ?>>
                             <div class="flex justify-center mb-3">
                                 <span class="text-xs font-semibold px-3 py-1 rounded-full bg-amber-400/20 text-amber-400 uppercase tracking-wide">Exploring</span>
                             </div>
-                            <h3 class="font-bold text-lg text-acc mb-2"><?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?></h3>
-                            <p class="text-muted text-sm leading-relaxed"><?= htmlspecialchars($partner['summary'], ENT_QUOTES, 'UTF-8'); ?></p>
+                            <h3 class="font-bold text-lg text-acc mb-2"<?= AdminMode::dataAttrs('partners', 'name', (string)$partner['id']); ?><?= AdminMode::isAdmin() ? ' class="admin-editable-text"' : ''; ?>><?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?></h3>
+                            <p class="text-muted text-sm leading-relaxed"<?= AdminMode::dataAttrs('partners', 'summary', (string)$partner['id']); ?><?= AdminMode::isAdmin() ? ' class="admin-editable-text"' : ''; ?>><?= htmlspecialchars($partner['summary'], ENT_QUOTES, 'UTF-8'); ?></p>
                         </a>
                     </div>
                 <?php endforeach; ?>

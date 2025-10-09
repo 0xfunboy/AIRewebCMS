@@ -11,6 +11,7 @@ use App\Services\Auth\AdminNonceService;
 use App\Services\Auth\AdminRepository;
 use App\Services\Auth\SessionGuard;
 use App\Services\Auth\WalletVerifier;
+use App\Support\AdminMode;
 use App\Support\Flash;
 use App\Support\Session;
 
@@ -81,6 +82,8 @@ final class AuthController extends Controller
 
         $guard = new SessionGuard();
         $guard->login((int)$admin['id']);
+        AdminMode::setWallet($address);
+        AdminMode::disable();
 
         $sessionId = session_id();
         $repository->recordSession((int)$admin['id'], $sessionId, $_SERVER['REMOTE_ADDR'] ?? null, $_SERVER['HTTP_USER_AGENT'] ?? null);

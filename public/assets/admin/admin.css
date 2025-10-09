@@ -1,0 +1,191 @@
+.admin-toolbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(15, 15, 30, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-family: 'Inter', sans-serif;
+}
+
+.admin-toolbar__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #f5f7ff;
+    font-size: 14px;
+}
+
+.admin-toolbar__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(240, 58, 58, 0.18);
+    color: #ffb4b4;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.admin-toolbar__toggle {
+    background: #f03a3a;
+    border: none;
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.admin-toolbar__toggle:hover {
+    background: #c92a2a;
+}
+
+.admin-toolbar__status {
+    opacity: 0.8;
+}
+
+.admin-toolbar__spacer {
+    flex: 1 1 auto;
+}
+
+.admin-toolbar__link {
+    color: #35e0ff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.admin-toolbar__link:hover {
+    text-decoration: underline;
+}
+
+body.admin-mode-active .admin-editing-outline {
+    outline: 2px dashed rgba(53, 224, 255, 0.6);
+    outline-offset: 2px;
+}
+
+.admin-action-buttons {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    gap: 6px;
+    z-index: 101;
+}
+
+.admin-action-button {
+    background: rgba(53, 224, 255, 0.9);
+    color: #0b0b12;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.admin-action-button:hover {
+    transform: translateY(-1px);
+    background: rgba(53, 224, 255, 1);
+}
+
+.admin-toaster {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    max-width: 320px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-toast {
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0b0b12;
+    background: rgba(53, 224, 255, 0.9);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+}
+
+.admin-toast.error {
+    background: rgba(240, 58, 58, 0.9);
+    color: #fff;
+}
+
+.admin-edit-overlay {
+    position: relative;
+}
+
+.admin-hidden {
+    display: none !important;
+}
+
+.admin-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 11, 18, 0.78);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    padding: 24px;
+}
+
+.admin-modal__content {
+    width: min(720px, 100%);
+    background: #0f0f1e;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 24px;
+    color: #f5f7ff;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.admin-modal textarea {
+    width: 100%;
+    min-height: 220px;
+    background: #12122a;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    color: inherit;
+    padding: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+}
+
+.admin-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.admin-modal__button {
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+.admin-modal__button.save {
+    background: #35e0ff;
+    color: #0b0b12;
+}
+
+.admin-modal__button.cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f5f7ff;
+}

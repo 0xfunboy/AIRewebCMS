@@ -7,6 +7,10 @@ return [
         ['setting_key' => 'site_tagline', 'setting_value' => 'Autonomous Agent Infrastructure for Crypto'],
         ['setting_key' => 'contact_email', 'setting_value' => 'dev@airewardrop.xyz'],
         ['setting_key' => 'business_telegram', 'setting_value' => 'https://t.me/funboynft'],
+        ['setting_key' => 'hero_title_home', 'setting_value' => 'Autonomous Agent Infrastructure for Crypto'],
+        ['setting_key' => 'hero_subtitle_home', 'setting_value' => 'AIRewardrop designs, ships, and operates always-on agents across multiple chains - live charts, on-chain analytics, and tokenized dApps. We’re the builders behind AIR3 and the Agent Swarm.'],
+        ['setting_key' => 'hero_image_home', 'setting_value' => 'https://picsum.photos/seed/hero-agent/600/500'],
+        ['setting_key' => 'hero_badge_home', 'setting_value' => '#4 Most Credible Agent by Ethos Network (Q4 2025).'],
         ['setting_key' => 'roadmap_vision', 'setting_value' => <<<'TEXT'
 AIRewardrop builds, maintains, and deploys autonomous agents for the crypto and DeFi world - agents that analyze markets in real time, talk, visualize data, act on-chain, and generate verifiable economic value. The goal is not to make "a single bot," but to create a framework of multi-chain, multi-purpose agents, each capable of operating autonomously or for partner teams, all connected by the $AIR3 token and a shared revenue model.
 TEXT

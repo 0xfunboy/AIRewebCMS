@@ -7,6 +7,8 @@ use App\Core\Router;
 use App\Middleware\RequireAdmin;
 use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\ProductsController;
+use App\Controllers\Admin\AdminInlineController;
+use App\Middleware\AdminApiGuard;
 use App\Controllers\Admin\PostsController;
 use App\Controllers\Admin\AgentsController;
 use App\Controllers\Admin\PartnersController;
@@ -26,6 +28,11 @@ $router->post('/admin/products/store', [ProductsController::class, 'store'], [$r
 $router->get('/admin/products/edit/{id}', [ProductsController::class, 'edit'], [$requireAdmin]);
 $router->post('/admin/products/update/{id}', [ProductsController::class, 'update'], [$requireAdmin]);
 $router->post('/admin/products/delete/{id}', [ProductsController::class, 'destroy'], [$requireAdmin]);
+
+$apiGuard = new AdminApiGuard();
+$router->post('/admin/api/update-field', [AdminInlineController::class, 'updateField'], [$apiGuard]);
+$router->post('/admin/api/upload-image', [AdminInlineController::class, 'uploadImage'], [$apiGuard]);
+$router->post('/admin/api/toggle-mode', [AdminInlineController::class, 'toggleMode'], [$apiGuard]);
 
 $router->get('/admin/posts', [PostsController::class, 'index'], [$requireAdmin]);
 $router->get('/admin/posts/create', [PostsController::class, 'create'], [$requireAdmin]);

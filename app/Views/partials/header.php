@@ -1,12 +1,18 @@
 <?php
 use App\Core\View;
+use App\Support\AdminMode;
+
+$settings = $settings ?? [];
+$siteName = $settings['site_name'] ?? 'AIRewardrop';
 ?>
 <header class="fixed top-0 left-0 right-0 z-50 bg-bg/80 backdrop-blur-lg border-b border-stroke">
     <div class="container mx-auto max-w-6xl px-4">
         <div class="flex h-20 items-center justify-between">
             <a href="/" class="flex items-center gap-2 text-xl font-bold text-acc">
                 <?php View::renderPartial('partials/logo', ['class' => 'h-8 w-8 text-pri']); ?>
-                <span>AIRewardrop</span>
+                <span<?= AdminMode::dataAttrs('settings', 'site_name'); ?><?= AdminMode::isAdmin() ? ' class="admin-editable-text"' : ''; ?>>
+                    <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8'); ?>
+                </span>
             </a>
             <nav class="hidden md:flex items-center gap-6 text-sm font-semibold">
                 <a href="/" class="text-txt hover:text-pri transition-colors">Home</a>

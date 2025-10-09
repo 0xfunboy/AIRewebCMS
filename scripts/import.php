@@ -79,9 +79,7 @@ function importSettings(\PDO $pdo): void
 function importAdminWallet(\PDO $pdo, array $config): void
 {
     $allowed = $config['wallet']['allowed_addresses'] ?? [];
-    $address = is_array($allowed) ? ($allowed[0] ?? null) : null;
-
-    if (!$address) {
+    if (!is_array($allowed) || !$allowed) {
         echo "No admin wallet configured; skipping admin seed.\n";
         return;
     }
@@ -98,8 +96,10 @@ function importAdminWallet(\PDO $pdo, array $config): void
     );
 
     $stmt = $pdo->prepare('INSERT IGNORE INTO admins (wallet_address) VALUES (:address)');
-    $stmt->execute(['address' => strtolower($address)]);
-    echo "Admin wallet seeded: {$address}\n";
+    foreach ($allowed as $address) {
+        $stmt->execute(['address' => strtolower((string)$address)]);
+        echo "Admin wallet seeded: {$address}\n";
+    }
 }
 
 function importProducts(\PDO $pdo, array $products, array $featureMap): void

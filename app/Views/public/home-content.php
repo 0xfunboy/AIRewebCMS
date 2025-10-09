@@ -1,5 +1,6 @@
 <?php
 use App\Core\View;
+use App\Support\AdminMode;
 
 /** @var array $settings */
 /** @var array $products */
@@ -7,6 +8,11 @@ use App\Core\View;
 /** @var array $partners */
 
 $tagline = $settings['site_tagline'] ?? 'Autonomous Agent Infrastructure for Crypto';
+$heroTitle = $settings['hero_title_home'] ?? $tagline;
+$heroSubtitle = $settings['hero_subtitle_home'] ?? 'AIRewardrop designs, ships, and operates always-on agents across multiple chains - live charts, on-chain analytics, and tokenized dApps. We’re the builders behind AIR3 and the Agent Swarm.';
+$heroImage = $settings['hero_image_home'] ?? 'https://picsum.photos/seed/hero-agent/600/500';
+$heroBadge = $settings['hero_badge_home'] ?? '#4 Most Credible Agent by Ethos Network (Q4 2025).';
+
 $productsList = array_values($products);
 $liveAgents = array_values(array_filter($agents, fn ($agent) => ($agent['status'] ?? '') === 'Live'));
 $activePartners = array_values(array_filter($partners, fn ($partner) => ($partner['status'] ?? '') === 'Active'));
@@ -16,12 +22,14 @@ $activePartners = array_values(array_filter($partners, fn ($partner) => ($partne
     <section class="pt-8 md:pt-16" data-animate>
         <div class="grid md:grid-cols-2 gap-8 items-center">
             <div class="text-center md:text-left">
-                <p class="text-sm font-bold text-pri tracking-widest uppercase">AIRewardrop</p>
-                <h1 class="mt-4 text-4xl md:text-5xl font-extrabold text-acc tracking-tighter leading-tight">
+                <p class="text-sm font-bold text-pri tracking-widest uppercase"<?= AdminMode::dataAttrs('settings', 'site_tagline'); ?><?= AdminMode::isAdmin() ? ' class="admin-editable-text"' : ''; ?>>
                     <?= htmlspecialchars($tagline, ENT_QUOTES, 'UTF-8'); ?>
+                </p>
+                <h1 class="mt-4 text-4xl md:text-5xl font-extrabold text-acc tracking-tighter leading-tight"<?= AdminMode::dataAttrs('settings', 'hero_title_home'); ?><?= AdminMode::isAdmin() ? ' class="admin-editable-text"' : ''; ?>>
+                    <?= htmlspecialchars($heroTitle, ENT_QUOTES, 'UTF-8'); ?>
                 </h1>
-                <p class="mt-6 max-w-xl mx-auto md:mx-0 text-lg text-muted">
-                    AIRewardrop designs, ships, and operates always-on agents across multiple chains - live charts, on-chain analytics, and tokenized dApps. We’re the builders behind AIR3 and the Agent Swarm.
+                <p class="mt-6 max-w-xl mx-auto md:mx-0 text-lg text-muted"<?= AdminMode::dataAttrs('settings', 'hero_subtitle_home'); ?><?= AdminMode::isAdmin() ? ' class="admin-editable-text"' : ''; ?>>
+                    <?= htmlspecialchars($heroSubtitle, ENT_QUOTES, 'UTF-8'); ?>
                 </p>
                 <div class="mt-8 flex flex-col sm:flex-row justify-center md:justify-start gap-4">
                     <a href="/products" class="bg-pri text-white font-bold py-3 px-6 rounded-md hover:bg-pri-700 transition-all duration-200 ease-in-out hover:-translate-y-0.5">
@@ -33,14 +41,16 @@ $activePartners = array_values(array_filter($partners, fn ($partner) => ($partne
                 </div>
             </div>
             <div>
-                <img src="https://picsum.photos/seed/hero-agent/600/500" alt="AI Agent" class="rounded-lg shadow-deep mx-auto" loading="lazy" />
+                <img src="<?= htmlspecialchars($heroImage, ENT_QUOTES, 'UTF-8'); ?>" alt="AI Agent" class="rounded-lg shadow-deep mx-auto" loading="lazy"<?= AdminMode::dataAttrs('settings', 'hero_image_home', null, 'image'); ?>>
             </div>
         </div>
     </section>
 
     <div class="text-center bg-glass border border-stroke rounded-lg p-4" data-animate>
         <p class="text-sm text-muted">
-            <span class="font-bold text-yl">#4 Most Credible Agent</span> by Ethos Network (Q4 2025).
+            <span class="font-bold text-yl"<?= AdminMode::dataAttrs('settings', 'hero_badge_home'); ?><?= AdminMode::isAdmin() ? ' class="admin-editable-text"' : ''; ?>>
+                <?= htmlspecialchars($heroBadge, ENT_QUOTES, 'UTF-8'); ?>
+            </span>
         </p>
     </div>
 
