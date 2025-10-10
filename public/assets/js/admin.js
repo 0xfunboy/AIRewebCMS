@@ -156,10 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!trimmed) {
             return '';
         }
-        if (/^https?:\/\//i.test(trimmed)) {
+        if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('/')) {
             return trimmed;
         }
-        return `/${trimmed.replace(/^\/+/u, '')}`;
+        return `/media/${trimmed.replace(/^\/+/u, '')}`;
     };
 
     document.querySelectorAll('[data-media-input]').forEach((wrapper) => {

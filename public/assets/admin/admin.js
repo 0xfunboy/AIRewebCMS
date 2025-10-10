@@ -458,9 +458,9 @@ function initToolbar() {
     if (toggle) {
         toggle.addEventListener('click', onToggleClick);
     }
-    const logout = qs('[data-admin-logout]');
-    if (logout) {
-        logout.addEventListener('click', onLogoutClick);
+    const logoutForm = qs('.admin-toolbar__form');
+    if (logoutForm) {
+        logoutForm.addEventListener('submit', onLogoutSubmit);
     }
     if (state.enabled) {
         activateAdminMode();
@@ -469,28 +469,29 @@ function initToolbar() {
     }
 }
 
-async function onLogoutClick(event) {
-    event.preventDefault();
+async function onLogoutSubmit(event) {
     const confirmExit = window.confirm('Vuoi salvare le modifiche e tornare alla modalità utente?');
     if (!confirmExit) {
+        event.preventDefault();
         return;
     }
 
-    if (state.enabled) {
-        try {
-            const data = await request(endpoints.toggle, {
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled: false, csrf: getCsrf() }),
-            });
-            state.enabled = Boolean(data.enabled);
-            deactivateAdminMode();
-        } catch (error) {
-            showToast(error.message, 'error');
-            return;
-        }
+    if (!state.enabled) {
+        return;
     }
 
-    window.location.href = '/auth/logout';
+    event.preventDefault();
+    try {
+        const data = await request(endpoints.toggle, {
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: false, csrf: getCsrf() }),
+        });
+        state.enabled = Boolean(data.enabled);
+        deactivateAdminMode();
+        event.target.submit();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
 }
 
 function toggleButtons(el, visibilityMap) {

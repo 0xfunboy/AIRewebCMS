@@ -46,7 +46,7 @@ final class MediaController extends Controller
 
             $files[] = [
                 'path' => $relativePath,
-                'url' => '/uploads/' . $relativePath,
+                'url' => '/media/' . $relativePath,
                 'size' => $file->getSize(),
                 'modified' => $file->getMTime(),
                 'type' => $extension,

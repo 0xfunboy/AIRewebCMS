@@ -12,8 +12,11 @@
         </span>
         <div class="admin-toolbar__spacer"></div>
         <a href="/admin/dashboard" class="admin-toolbar__link admin-toolbar__link--primary">Dashboard</a>
-        <button type="button" class="admin-toolbar__link admin-toolbar__link--button" data-admin-logout>
-            Logout
-        </button>
+        <form method="post" action="/auth/logout" class="admin-toolbar__form">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($enabled ? \\App\Services\Security\Csrf::token() : '', ENT_QUOTES, 'UTF-8'); ?>">
+            <button type="submit" class="admin-toolbar__link admin-toolbar__link--button">
+                Logout
+            </button>
+        </form>
     </div>
 </div>
