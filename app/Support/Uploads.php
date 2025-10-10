@@ -38,6 +38,7 @@ final class Uploads
         }
 
         $dimensions = [null, null];
+        $sanitizedSvg = null;
         if ($ext !== 'svg') {
             $info = @getimagesize($file['tmp_name']);
             if (!$info) {
@@ -50,7 +51,7 @@ final class Uploads
                 $dimensions = [$info[0], $info[1]];
             }
         } else {
-            self::validateSvg($file['tmp_name']);
+            $sanitizedSvg = self::sanitizeSvgContents($file['tmp_name']);
         }
 
         $slug = self::slugify($nameHint);
@@ -66,6 +67,13 @@ final class Uploads
         $target = $basePath . '/' . $filename;
         if (!move_uploaded_file($file['tmp_name'], $target)) {
             throw new \RuntimeException('Unable to save uploaded file.');
+        }
+
+        if ($ext === 'svg' && $sanitizedSvg !== null) {
+            if (file_put_contents($target, $sanitizedSvg, LOCK_EX) === false) {
+                @unlink($target);
+                throw new \RuntimeException('Unable to write sanitized SVG.');
+            }
         }
 
         return [
@@ -98,16 +106,107 @@ final class Uploads
         return str_starts_with($mime, $map[$ext]);
     }
 
-    private static function validateSvg(string $path): void
+    private static function sanitizeSvgContents(string $path): string
     {
         $contents = file_get_contents($path);
         if ($contents === false) {
             throw new \RuntimeException('Unable to read SVG file.');
         }
 
-        $lower = strtolower($contents);
-        if (str_contains($lower, '<script') || preg_match('/on\w+=/i', $contents)) {
-            throw new \RuntimeException('SVG contains disallowed scripts.');
+        $doc = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+        $loaded = $doc->loadXML($contents, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        if (!$loaded || !$doc->documentElement || strtolower($doc->documentElement->tagName) !== 'svg') {
+            throw new \RuntimeException('Invalid SVG content.');
+        }
+
+        $allowedElements = [
+            'svg', 'g', 'defs', 'lineargradient', 'radialgradient', 'stop', 'path', 'rect', 'circle',
+            'ellipse', 'line', 'polyline', 'polygon', 'text', 'tspan', 'clippath', 'mask', 'use',
+            'symbol', 'view', 'title', 'desc', 'metadata', 'pattern', 'image'
+        ];
+
+        $attributeAllowlist = [
+            '*' => ['id', 'class', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray',
+                'stroke-miterlimit', 'opacity', 'transform', 'clip-path', 'clip-rule', 'fill-rule'],
+            'svg' => ['viewBox', 'xmlns', 'xmlns:xlink', 'width', 'height'],
+            'path' => ['d'],
+            'rect' => ['x', 'y', 'width', 'height', 'rx', 'ry'],
+            'circle' => ['cx', 'cy', 'r'],
+            'ellipse' => ['cx', 'cy', 'rx', 'ry'],
+            'line' => ['x1', 'y1', 'x2', 'y2'],
+            'polyline' => ['points'],
+            'polygon' => ['points'],
+            'text' => ['x', 'y'],
+            'tspan' => ['x', 'y'],
+            'lineargradient' => ['x1', 'y1', 'x2', 'y2', 'gradientUnits', 'gradientTransform'],
+            'radialgradient' => ['cx', 'cy', 'r', 'fx', 'fy', 'gradientUnits', 'gradientTransform'],
+            'stop' => ['offset', 'stop-color', 'stop-opacity'],
+            'use' => ['xlink:href', 'href', 'x', 'y', 'width', 'height'],
+            'image' => ['x', 'y', 'width', 'height', 'href', 'xlink:href']
+        ];
+
+        self::sanitizeSvgNode($doc->documentElement, $allowedElements, $attributeAllowlist);
+
+        return $doc->saveXML($doc->documentElement) ?: '';
+    }
+
+    private static function sanitizeSvgNode(\DOMNode $node, array $allowedElements, array $attributeAllowlist): void
+    {
+        foreach (iterator_to_array($node->childNodes) as $child) {
+            if ($child instanceof \DOMElement) {
+                $tag = strtolower($child->tagName);
+                if (!in_array($tag, $allowedElements, true)) {
+                    $child->parentNode?->removeChild($child);
+                    continue;
+                }
+
+                self::sanitizeSvgAttributes($child, $tag, $attributeAllowlist);
+                self::sanitizeSvgNode($child, $allowedElements, $attributeAllowlist);
+            } elseif ($child instanceof \DOMComment) {
+                $child->parentNode?->removeChild($child);
+            }
+        }
+    }
+
+    private static function sanitizeSvgAttributes(\DOMElement $element, string $tag, array $attributeAllowlist): void
+    {
+        $allowed = array_merge($attributeAllowlist['*'] ?? [], $attributeAllowlist[strtolower($tag)] ?? []);
+
+        /** @var \DOMAttr $attribute */
+        foreach (iterator_to_array($element->attributes) as $attribute) {
+            $name = strtolower($attribute->name);
+            $value = trim($attribute->value);
+
+            if (str_starts_with($name, 'on')) {
+                $element->removeAttributeNode($attribute);
+                continue;
+            }
+
+            if (!in_array($name, $allowed, true)) {
+                $element->removeAttributeNode($attribute);
+                continue;
+            }
+
+            if ($name === 'href' || $name === 'xlink:href') {
+                $lower = strtolower($value);
+                if ($value === '' || str_starts_with($lower, 'javascript:') || str_starts_with($lower, 'data:') || str_starts_with($lower, 'http')) {
+                    $element->removeAttributeNode($attribute);
+                    continue;
+                }
+
+                if ($value[0] !== '#' && !preg_match('/^data:image\//i', $value)) {
+                    $element->removeAttributeNode($attribute);
+                    continue;
+                }
+            }
+
+            if ($name === 'style') {
+                $element->removeAttributeNode($attribute);
+            }
         }
     }
 

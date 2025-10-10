@@ -10,6 +10,7 @@ use App\Core\Response;
 use App\Services\Security\Csrf;
 use App\Support\AdminMode;
 use App\Support\Uploads;
+use App\Support\HtmlSanitizer;
 use PDO;
 
 final class AdminInlineController extends Controller
@@ -280,9 +281,7 @@ final class AdminInlineController extends Controller
 
     private function sanitizeHtml(string $value): string
     {
-        $allowed = '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><blockquote><a><span>';
-        $clean = strip_tags($value, $allowed);
-        return trim($clean);
+        return HtmlSanitizer::sanitize($value);
     }
 
     private function sanitizeUrl(string $value): string
