@@ -22,73 +22,32 @@ final class Uploads
             throw new \RuntimeException('Upload error: ' . self::errorMessage($file['error']));
         }
 
-        if ($file['size'] > self::MAX_BYTES) {
-            throw new \RuntimeException('File exceeds the 5 MB limit.');
+        return self::processFile(
+            $file['tmp_name'],
+            (string)($file['name'] ?? 'upload'),
+            $nameHint,
+            true,
+            (int)($file['size'] ?? 0)
+        );
+    }
+
+    /**
+     * Store a file already present on disk (e.g. downloaded remotely).
+     *
+     * @return array{path:string,width:?int,height:?int}
+     */
+    public static function storeFromPath(string $path, string $originalName, string $nameHint): array
+    {
+        if (!is_file($path)) {
+            throw new \RuntimeException('The provided path is not a file.');
         }
 
-        $originalName = (string)($file['name'] ?? 'upload');
-        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-        if (!in_array($ext, self::ALLOWED_EXT, true)) {
-            throw new \RuntimeException('File type not allowed.');
+        $size = filesize($path);
+        if ($size === false) {
+            throw new \RuntimeException('Unable to determine file size.');
         }
 
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($file['tmp_name']) ?: '';
-        if (!self::isAllowedMime($mime, $ext)) {
-            throw new \RuntimeException('File format not recognized.');
-        }
-
-        $dimensions = [null, null];
-        $sanitizedSvg = null;
-        if ($ext !== 'svg') {
-            $info = @getimagesize($file['tmp_name']);
-            if (!$info) {
-                if ($ext === 'ico') {
-                    $dimensions = [null, null];
-                } else {
-                    throw new \RuntimeException('Invalid image file.');
-                }
-            } else {
-                $dimensions = [$info[0], $info[1]];
-            }
-        } else {
-            $sanitizedSvg = self::sanitizeSvgContents($file['tmp_name']);
-        }
-
-        $slug = self::slugify($nameHint);
-        $hash = substr(sha1_file($file['tmp_name']) ?: bin2hex(random_bytes(8)), 0, 10);
-        $filename = sprintf('%s-%s.%s', $slug, $hash, $ext);
-
-        $relativeDir = self::BASE_DIR . '/' . date('Y/m');
-        $basePath = dirname(__DIR__, 2) . '/public/' . $relativeDir;
-        if (!is_dir($basePath) && !mkdir($basePath, 0775, true) && !is_dir($basePath)) {
-            throw new \RuntimeException('Unable to create upload directory.');
-        }
-
-        $target = $basePath . '/' . $filename;
-        if (!move_uploaded_file($file['tmp_name'], $target)) {
-            throw new \RuntimeException('Unable to save uploaded file.');
-        }
-
-        if ($ext === 'svg' && $sanitizedSvg !== null) {
-            if (file_put_contents($target, $sanitizedSvg, LOCK_EX) === false) {
-                @unlink($target);
-                throw new \RuntimeException('Unable to write sanitized SVG.');
-            }
-
-            $converted = self::convertSvgToPng($sanitizedSvg, $slug, $hash, $basePath);
-            if ($converted !== null) {
-                @unlink($target);
-                $filename = $converted['filename'];
-                $dimensions = [$converted['width'], $converted['height']];
-            }
-        }
-
-        return [
-            'path' => $relativeDir . '/' . $filename,
-            'width' => $dimensions[0],
-            'height' => $dimensions[1],
-        ];
+        return self::processFile($path, $originalName, $nameHint, false, (int)$size);
     }
 
     private static function isAllowedMime(string $mime, string $ext): bool
@@ -112,6 +71,92 @@ final class Uploads
         }
 
         return str_starts_with($mime, $map[$ext]);
+    }
+
+    private static function processFile(string $sourcePath, string $originalName, string $nameHint, bool $isUploaded, int $size): array
+    {
+        if ($size > self::MAX_BYTES) {
+            throw new \RuntimeException('File exceeds the 5 MB limit.');
+        }
+
+        $originalName = $originalName !== '' ? $originalName : 'upload';
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        if ($ext === '') {
+            $ext = self::detectExtensionFromMime($sourcePath);
+        }
+
+        if ($ext === '') {
+            throw new \RuntimeException('File type not allowed.');
+        }
+
+        if (!in_array($ext, self::ALLOWED_EXT, true)) {
+            throw new \RuntimeException('File type not allowed.');
+        }
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($sourcePath) ?: '';
+        if (!self::isAllowedMime($mime, $ext)) {
+            throw new \RuntimeException('File format not recognized.');
+        }
+
+        $dimensions = [null, null];
+        $sanitizedSvg = null;
+        if ($ext !== 'svg') {
+            $info = @getimagesize($sourcePath);
+            if (!$info) {
+                if ($ext === 'ico') {
+                    $dimensions = [null, null];
+                } else {
+                    throw new \RuntimeException('Invalid image file.');
+                }
+            } else {
+                $dimensions = [$info[0], $info[1]];
+            }
+        } else {
+            $sanitizedSvg = self::sanitizeSvgContents($sourcePath);
+        }
+
+        $slug = self::slugify($nameHint);
+        $hash = substr(sha1_file($sourcePath) ?: bin2hex(random_bytes(8)), 0, 10);
+        $filename = sprintf('%s-%s.%s', $slug, $hash, $ext);
+
+        $relativeDir = self::BASE_DIR . '/' . date('Y/m');
+        $basePath = dirname(__DIR__, 2) . '/public/' . $relativeDir;
+        if (!is_dir($basePath) && !mkdir($basePath, 0775, true) && !is_dir($basePath)) {
+            throw new \RuntimeException('Unable to create upload directory.');
+        }
+
+        $target = $basePath . '/' . $filename;
+        if ($isUploaded) {
+            if (!move_uploaded_file($sourcePath, $target)) {
+                throw new \RuntimeException('Unable to save uploaded file.');
+            }
+        } else {
+            if (!copy($sourcePath, $target)) {
+                throw new \RuntimeException('Unable to copy file into media library.');
+            }
+        }
+
+        if ($ext === 'svg' && $sanitizedSvg !== null) {
+            if (file_put_contents($target, $sanitizedSvg, LOCK_EX) === false) {
+                @unlink($target);
+                throw new \RuntimeException('Unable to write sanitized SVG.');
+            }
+
+            $converted = self::convertSvgToPng($sanitizedSvg, $slug, $hash, $basePath);
+            if ($converted !== null) {
+                @unlink($target);
+                $filename = $converted['filename'];
+                $target = $basePath . '/' . $filename;
+                $dimensions = [$converted['width'], $converted['height']];
+            }
+        }
+
+        return [
+            'path' => $relativeDir . '/' . $filename,
+            'width' => $dimensions[0],
+            'height' => $dimensions[1],
+        ];
     }
 
     private static function sanitizeSvgContents(string $path): string
@@ -272,5 +317,19 @@ final class Uploads
             $imagick->clear();
             $imagick->destroy();
         }
+    }
+
+    private static function detectExtensionFromMime(string $path): string
+    {
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($path) ?: '';
+        return match ($mime) {
+            'image/png' => 'png',
+            'image/jpeg' => 'jpg',
+            'image/webp' => 'webp',
+            'image/svg+xml' => 'svg',
+            'image/x-icon', 'image/vnd.microsoft.icon' => 'ico',
+            default => '',
+        };
     }
 }

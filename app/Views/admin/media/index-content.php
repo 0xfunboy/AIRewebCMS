@@ -20,6 +20,23 @@ $formatSize = static function (int $bytes): string {
         </div>
     </div>
 
+    <form method="post" action="/admin/media/optimize" class="card space-y-3" data-optimize-media>
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-acc">Optimize Media</h2>
+                <p class="text-sm text-muted">Mirror remote assets locally and convert everything to optimized WebP files.</p>
+            </div>
+            <button type="submit" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-pri text-white text-sm font-medium hover:bg-red-500/80 transition disabled:opacity-60">
+                Optimize Images
+            </button>
+        </div>
+        <div class="media-optimize-status hidden" data-optimize-status>
+            <p class="text-xs text-muted" data-optimize-summary>Preparing optimization…</p>
+            <ol class="space-y-1 text-xs" data-optimize-log></ol>
+        </div>
+    </form>
+
     <?php if (empty($media)): ?>
         <div class="card text-sm text-muted">
             <p>No assets uploaded yet. Upload images from any editor form to populate the media library.</p>

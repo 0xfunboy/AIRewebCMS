@@ -139,6 +139,7 @@ if ($isAdmin) {
     <?php if ($isAdmin): ?>
         <?php View::renderPartial('partials/admin-toolbar', [
             'enabled' => $adminModeEnabled,
+            'logoutCsrf' => $adminCsrf,
         ]); ?>
     <?php endif; ?>
     <?php View::renderPartial('partials/header', [

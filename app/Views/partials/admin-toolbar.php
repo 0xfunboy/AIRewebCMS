@@ -1,5 +1,6 @@
 <?php
 /** @var bool $enabled */
+$logoutCsrf = $logoutCsrf ?? null;
 ?>
 <div class="admin-toolbar" data-admin-toolbar data-enabled="<?= $enabled ? 'true' : 'false'; ?>">
     <div class="admin-toolbar__inner">
@@ -13,7 +14,9 @@
         <div class="admin-toolbar__spacer"></div>
         <a href="/admin/dashboard" class="admin-toolbar__link admin-toolbar__link--primary">Dashboard</a>
         <form method="post" action="/auth/logout" class="admin-toolbar__form">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($enabled ? \\App\Services\Security\Csrf::token() : '', ENT_QUOTES, 'UTF-8'); ?>">
+            <?php if (!empty($logoutCsrf)): ?>
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($logoutCsrf, ENT_QUOTES, 'UTF-8'); ?>">
+            <?php endif; ?>
             <button type="submit" class="admin-toolbar__link admin-toolbar__link--button">
                 Logout
             </button>

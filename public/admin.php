@@ -71,6 +71,7 @@ $router->post('/admin/social-proof/update/{id}', [SocialProofController::class, 
 $router->post('/admin/social-proof/delete/{id}', [SocialProofController::class, 'destroy'], [$requireAdmin]);
 
 $router->get('/admin/media', [MediaController::class, 'index'], [$requireAdmin]);
+$router->post('/admin/media/optimize', [MediaController::class, 'optimize'], [$requireAdmin]);
 
 $router->get('/admin/roadmap', [RoadmapController::class, 'index'], [$requireAdmin]);
 $router->get('/admin/roadmap/create', [RoadmapController::class, 'create'], [$requireAdmin]);

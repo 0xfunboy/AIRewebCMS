@@ -148,6 +148,82 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    const optimizeForm = qs('[data-optimize-media]');
+    if (optimizeForm) {
+        const statusBox = qs('[data-optimize-status]', optimizeForm);
+        const summary = qs('[data-optimize-summary]', optimizeForm);
+        const logList = qs('[data-optimize-log]', optimizeForm);
+        const submitButton = optimizeForm.querySelector('button[type="submit"]');
+
+        optimizeForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Optimizing…';
+            }
+
+            if (statusBox) {
+                statusBox.classList.remove('hidden');
+            }
+            if (summary) {
+                summary.textContent = 'Phase 1/2 – scanning remote media…';
+            }
+            if (logList) {
+                logList.innerHTML = '';
+            }
+
+            const formData = new FormData(optimizeForm);
+
+            try {
+                const response = await fetch(optimizeForm.getAttribute('action') || '/admin/media/optimize', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.ok) {
+                    const message = (data && data.error) ? data.error : 'Unexpected error while optimizing media.';
+                    if (summary) {
+                        summary.textContent = message;
+                    }
+                    return;
+                }
+
+                const steps = Array.isArray(data.steps) ? data.steps : [];
+                if (logList) {
+                    logList.innerHTML = '';
+                    steps.forEach((step) => {
+                        const item = document.createElement('li');
+                        item.textContent = `Phase ${step.phase}: ${step.message} (${step.current}/${step.total})`;
+                        if (step.status === 'error') {
+                            item.classList.add('media-optimize-status__item--error');
+                        } else if (step.status === 'skip') {
+                            item.classList.add('media-optimize-status__item--skip');
+                        }
+                        logList.appendChild(item);
+                    });
+                }
+
+                if (summary) {
+                    summary.innerHTML = `Phase 1: ${data.phase1.processed}/${data.phase1.total} (errors: ${data.phase1.errors})<br>Phase 2: ${data.phase2.processed}/${data.phase2.total} (errors: ${data.phase2.errors})`;
+                }
+            } catch (error) {
+                console.error(error);
+                if (summary) {
+                    summary.textContent = 'Optimization failed: ' + (error?.message || 'unknown error');
+                }
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Optimize Images';
+                }
+            }
+        });
+    }
+
     const makeMediaUrl = (value) => {
         if (!value) {
             return '';

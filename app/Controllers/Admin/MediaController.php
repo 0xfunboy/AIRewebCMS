@@ -4,6 +4,9 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Core\Controller;
+use App\Core\Database;
+use App\Core\Response;
+use App\Services\Admin\MediaOptimizer;
 use App\Services\Security\Csrf;
 
 final class MediaController extends Controller
@@ -17,6 +20,19 @@ final class MediaController extends Controller
             'media' => $library,
             'csrfToken' => Csrf::token(),
         ]);
+    }
+
+    public function optimize(): void
+    {
+        $this->assertValidCsrf($_POST['csrf_token'] ?? null);
+
+        $optimizer = new MediaOptimizer(Database::connection());
+        try {
+            $report = $optimizer->run();
+            Response::json(['ok' => true] + $report);
+        } catch (\Throwable $e) {
+            Response::json(['ok' => false, 'error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -59,5 +75,15 @@ final class MediaController extends Controller
         );
 
         return $files;
+    }
+
+    private function assertValidCsrf(?string $token): void
+    {
+        if (Csrf::verify($token)) {
+            return;
+        }
+
+        Response::json(['ok' => false, 'error' => 'Invalid CSRF token'], 403);
+        exit;
     }
 }
