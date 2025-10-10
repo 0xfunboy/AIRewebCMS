@@ -58,17 +58,34 @@ final class SeedImporter
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
         );
 
-        $stmt = $pdo->prepare('INSERT INTO settings (setting_key, setting_value) VALUES (:key, :value)
-            ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
+        $select = $pdo->prepare('SELECT setting_value FROM settings WHERE setting_key = :key LIMIT 1');
+        $insert = $pdo->prepare('INSERT INTO settings (setting_key, setting_value) VALUES (:key, :value)');
+        $update = $pdo->prepare('UPDATE settings SET setting_value = :value WHERE setting_key = :key');
 
         foreach ($settings as $setting) {
             if (!isset($setting['setting_key'], $setting['setting_value'])) {
                 continue;
             }
-            $stmt->execute([
-                'key' => $setting['setting_key'],
-                'value' => $setting['setting_value'],
-            ]);
+            $key = (string)$setting['setting_key'];
+            $value = (string)$setting['setting_value'];
+
+            $select->execute(['key' => $key]);
+            $existing = $select->fetchColumn();
+
+            if ($existing === false) {
+                $insert->execute([
+                    'key' => $key,
+                    'value' => $value,
+                ]);
+                continue;
+            }
+
+            if ($existing === null || $existing === '') {
+                $update->execute([
+                    'key' => $key,
+                    'value' => $value,
+                ]);
+            }
         }
     }
 
