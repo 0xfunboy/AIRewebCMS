@@ -34,3 +34,7 @@ body {
 .media-optimize-status__item--skip {
     color: #facc15;
 }
+
+[data-media-tools] form {
+    margin: 0;
+}

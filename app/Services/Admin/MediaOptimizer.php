@@ -49,6 +49,42 @@ final class MediaOptimizer
     }
 
     /**
+     * Execute only the remote mirroring phase.
+     *
+     * @return array{steps:array<int,array<string,mixed>>,processed:int,total:int,errors:int}
+     */
+    public function mirror(): array
+    {
+        $steps = [];
+        $phase = $this->mirrorRemoteAssets($steps);
+
+        return [
+            'steps' => $steps,
+            'processed' => $phase['processed'],
+            'total' => $phase['total'],
+            'errors' => $phase['errors'],
+        ];
+    }
+
+    /**
+     * Execute only the local WebP optimization phase.
+     *
+     * @return array{steps:array<int,array<string,mixed>>,processed:int,total:int,errors:int}
+     */
+    public function optimize(): array
+    {
+        $steps = [];
+        $phase = $this->convertLocalImagesToWebp($steps);
+
+        return [
+            'steps' => $steps,
+            'processed' => $phase['processed'],
+            'total' => $phase['total'],
+            'errors' => $phase['errors'],
+        ];
+    }
+
+    /**
      * @param array<int,array<string,mixed>> $steps
      * @return array{processed:int,total:int,errors:int}
      */
@@ -313,6 +349,10 @@ final class MediaOptimizer
         $width = null;
         $height = null;
 
+        if (!class_exists(\Imagick::class) && !function_exists('imagewebp')) {
+            throw new \RuntimeException('WebP conversion requires Imagick or GD with WebP support.');
+        }
+
         if (class_exists(\Imagick::class)) {
             $imagick = new \Imagick();
             try {
@@ -335,13 +375,21 @@ final class MediaOptimizer
             switch ($extension) {
                 case 'jpeg':
                 case 'jpg':
-                    $image = imagecreatefromjpeg($absolutePath);
+                    if (!function_exists('imagecreatefromjpeg')) {
+                        throw new \RuntimeException('GD JPEG support is not available.');
+                    }
+                    $image = @imagecreatefromjpeg($absolutePath);
                     break;
                 case 'png':
-                    $image = imagecreatefrompng($absolutePath);
-                    imagepalettetotruecolor($image);
-                    imagealphablending($image, true);
-                    imagesavealpha($image, true);
+                    if (!function_exists('imagecreatefrompng')) {
+                        throw new \RuntimeException('GD PNG support is not available.');
+                    }
+                    $image = @imagecreatefrompng($absolutePath);
+                    if ($image) {
+                        imagepalettetotruecolor($image);
+                        imagealphablending($image, true);
+                        imagesavealpha($image, true);
+                    }
                     break;
                 default:
                     throw new \RuntimeException('Conversion requires Imagick for this format.');
@@ -351,9 +399,14 @@ final class MediaOptimizer
                 throw new \RuntimeException('Unable to create image resource.');
             }
 
+            if (!function_exists('imagewebp')) {
+                imagedestroy($image);
+                throw new \RuntimeException('GD WebP support is not available.');
+            }
+
             $width = imagesx($image);
             $height = imagesy($image);
-            if (!imagewebp($image, $targetPath, 85)) {
+            if (!@imagewebp($image, $targetPath, 85)) {
                 imagedestroy($image);
                 throw new \RuntimeException('GD failed to write webp file.');
             }

@@ -1,6 +1,6 @@
 .admin-toolbar {
     position: fixed;
-    bottom: 0;
+    top: 0;
     left: 0;
     right: 0;
     z-index: 200;
@@ -97,7 +97,7 @@
 }
 
 body.admin-toolbar-present {
-    padding-bottom: 72px;
+    padding-top: 72px;
 }
 
 @media (max-width: 768px) {
@@ -108,7 +108,7 @@ body.admin-toolbar-present {
     }
 
     body.admin-toolbar-present {
-        padding-bottom: 110px;
+        padding-top: 110px;
     }
 }
 

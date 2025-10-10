@@ -148,79 +148,95 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    const optimizeForm = qs('[data-optimize-media]');
-    if (optimizeForm) {
-        const statusBox = qs('[data-optimize-status]', optimizeForm);
-        const summary = qs('[data-optimize-summary]', optimizeForm);
-        const logList = qs('[data-optimize-log]', optimizeForm);
-        const submitButton = optimizeForm.querySelector('button[type="submit"]');
+    const mediaTools = qs('[data-media-tools]');
+    if (mediaTools) {
+        const statusBox = qs('[data-media-status]', mediaTools);
+        const summary = qs('[data-media-summary]', mediaTools);
+        const logList = qs('[data-media-log]', mediaTools);
 
-        optimizeForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
+        mediaTools.querySelectorAll('form[data-media-action]').forEach((form) => {
+            const action = form.getAttribute('data-media-action') || 'optimize';
+            const button = form.querySelector('button[type="submit"]');
 
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.textContent = 'Optimizing…';
-            }
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
 
-            if (statusBox) {
-                statusBox.classList.remove('hidden');
-            }
-            if (summary) {
-                summary.textContent = 'Phase 1/2 – scanning remote media…';
-            }
-            if (logList) {
-                logList.innerHTML = '';
-            }
-
-            const formData = new FormData(optimizeForm);
-
-            try {
-                const response = await fetch(optimizeForm.getAttribute('action') || '/admin/media/optimize', {
-                    method: 'POST',
-                    headers: { 'Accept': 'application/json' },
-                    body: formData,
-                });
-
-                const data = await response.json();
-
-                if (!response.ok || !data.ok) {
-                    const message = (data && data.error) ? data.error : 'Unexpected error while optimizing media.';
-                    if (summary) {
-                        summary.textContent = message;
-                    }
-                    return;
+                if (button) {
+                    button.disabled = true;
+                    button.dataset.originalLabel = button.textContent || '';
+                    button.textContent = action === 'mirror' ? 'Mirroring…' : 'Optimizing…';
                 }
 
-                const steps = Array.isArray(data.steps) ? data.steps : [];
+                if (statusBox) {
+                    statusBox.classList.remove('hidden');
+                }
+                if (summary) {
+                    summary.textContent = action === 'mirror'
+                        ? 'Phase 1 – mirroring remote assets…'
+                        : 'Phase 2 – converting images to WebP…';
+                }
                 if (logList) {
                     logList.innerHTML = '';
-                    steps.forEach((step) => {
-                        const item = document.createElement('li');
-                        item.textContent = `Phase ${step.phase}: ${step.message} (${step.current}/${step.total})`;
-                        if (step.status === 'error') {
-                            item.classList.add('media-optimize-status__item--error');
-                        } else if (step.status === 'skip') {
-                            item.classList.add('media-optimize-status__item--skip');
-                        }
-                        logList.appendChild(item);
-                    });
                 }
 
-                if (summary) {
-                    summary.innerHTML = `Phase 1: ${data.phase1.processed}/${data.phase1.total} (errors: ${data.phase1.errors})<br>Phase 2: ${data.phase2.processed}/${data.phase2.total} (errors: ${data.phase2.errors})`;
+                const formData = new FormData(form);
+
+                try {
+                    const response = await fetch(form.getAttribute('action') || '/admin/media/optimize', {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json' },
+                        body: formData,
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data.ok) {
+                        const message = (data && data.error) ? data.error : 'Unexpected error while processing media.';
+                        if (summary) {
+                            summary.textContent = message;
+                        }
+                        return;
+                    }
+
+                    const steps = Array.isArray(data.steps) ? data.steps : [];
+                    if (logList) {
+                        logList.innerHTML = '';
+                        steps.forEach((step) => {
+                            const item = document.createElement('li');
+                            item.textContent = `Phase ${step.phase}: ${step.message} (${step.current}/${step.total})`;
+                            if (step.status === 'error') {
+                                item.classList.add('media-optimize-status__item--error');
+                            } else if (step.status === 'skip') {
+                                item.classList.add('media-optimize-status__item--skip');
+                            }
+                            logList.appendChild(item);
+                        });
+                    }
+
+                    if (summary) {
+                        if (action === 'mirror') {
+                            summary.textContent = `Mirrored ${data.processed}/${data.total} assets (errors: ${data.errors}).`;
+                        } else {
+                            summary.textContent = `Converted ${data.processed}/${data.total} files to WebP (errors: ${data.errors}).`;
+                        }
+                    }
+
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } catch (error) {
+                    console.error(error);
+                    if (summary) {
+                        summary.textContent = 'Operation failed: ' + (error?.message || 'unknown error');
+                    }
+                } finally {
+                    if (button) {
+                        button.disabled = false;
+                        button.textContent = button.dataset.originalLabel || button.textContent;
+                        delete button.dataset.originalLabel;
+                    }
                 }
-            } catch (error) {
-                console.error(error);
-                if (summary) {
-                    summary.textContent = 'Optimization failed: ' + (error?.message || 'unknown error');
-                }
-            } finally {
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Optimize Images';
-                }
-            }
+            });
         });
     }
 

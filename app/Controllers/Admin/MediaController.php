@@ -22,13 +22,26 @@ final class MediaController extends Controller
         ]);
     }
 
+    public function mirror(): void
+    {
+        $this->assertValidCsrf($_POST['csrf_token'] ?? null);
+
+        $optimizer = new MediaOptimizer(Database::connection());
+        try {
+            $report = $optimizer->mirror();
+            Response::json(['ok' => true] + $report);
+        } catch (\Throwable $e) {
+            Response::json(['ok' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
     public function optimize(): void
     {
         $this->assertValidCsrf($_POST['csrf_token'] ?? null);
 
         $optimizer = new MediaOptimizer(Database::connection());
         try {
-            $report = $optimizer->run();
+            $report = $optimizer->optimize();
             Response::json(['ok' => true] + $report);
         } catch (\Throwable $e) {
             Response::json(['ok' => false, 'error' => $e->getMessage()], 500);

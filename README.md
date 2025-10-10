@@ -5,7 +5,7 @@ A lightweight PHP + MySQL CMS powering the AIRewardrop agent website. The system
 ## Features
 - **Wallet-based admin login** using WalletConnect v2 with nonce validation and session tracking.
 - **Modular admin dashboard** covering Products, Agents, Partners, Team, Blog Posts, Social Proof, Roadmap (phases + tracks), and global Settings.
-- **Media library explorer & optimizer** with previews, quick URL copy actions, and a one-click "Optimize Images" workflow that mirrors external assets locally and converts everything to WebP under `public/media/`.
+- **Media library explorer & optimizer** with previews, quick URL copy actions, plus dedicated actions to mirror external assets locally and convert the entire library to WebP under `public/media/`.
 - **Public site pages** rendered through PHP templates that mirror the original Tailwind-styled marketing content.
 - **Automatic seed importer** populates empty tables from `database/seed-data.php` on first run.
 - **MySQL migrations** in `database/schema.sql` aligned with the CMS features (admins, sessions, content tables, etc.).
@@ -91,7 +91,7 @@ Authenticated admins see a toolbar on every public page:
 ### Admin Media Library & Upload Fields
 - Every dashboard form that accepts logos, avatars, hero images, or social graphics now includes a **media field** with live previews, manual URL entry, and optional file upload.
 - Uploaded assets are stored beneath `public/media/YYYY/MM/<slug>-<hash>.<ext>` via `App\Support\Uploads`. SVGs are converted into transparent PNGs when ImageMagick is available, and every path is returned with a leading `/` so you can drop it straight into inline editing or templates.
-- From **Admin → Media Library** use the *Optimize Images* action to download any remote assets referenced across settings or content tables, replace those links with local media paths, and bulk-convert everything to WebP while tracking progress for each phase.
+- From **Admin → Media Library** trigger `Local Mirror Images` to download any remote assets referenced across settings or content tables, then `Optimize to WebP` to convert the local library while tracking progress. The optimizer uses Imagick when available and falls back to GD (with WebP support) otherwise.
 - Visit **Dashboard → Media Library** to browse all uploaded files, open them in a new tab, or copy absolute URLs to your clipboard.
 
 ## Usage
