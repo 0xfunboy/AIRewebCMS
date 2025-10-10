@@ -24,6 +24,9 @@ use App\Core\View;
         <a href="/admin/social-proof" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
             <span class="text-muted">Social Proof</span>
         </a>
+        <a href="/admin/media" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+            <span class="text-muted">Media Library</span>
+        </a>
         <a href="/admin/posts" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
             <span class="text-muted">Posts</span>
         </a>
@@ -35,6 +38,9 @@ use App\Core\View;
         </a>
         <a href="/admin/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
             <span class="text-muted">Settings</span>
+        </a>
+        <a href="/" target="_blank" rel="noopener" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+            <span class="text-muted">Open Site Preview</span>
         </a>
     </nav>
     <div class="px-4 py-6 border-t border-stroke">

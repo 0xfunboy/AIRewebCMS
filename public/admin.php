@@ -16,6 +16,7 @@ use App\Controllers\Admin\TeamController;
 use App\Controllers\Admin\SocialProofController;
 use App\Controllers\Admin\RoadmapController;
 use App\Controllers\Admin\SettingsController;
+use App\Controllers\Admin\MediaController;
 
 $router = new Router();
 
@@ -68,6 +69,8 @@ $router->post('/admin/social-proof/store', [SocialProofController::class, 'store
 $router->get('/admin/social-proof/edit/{id}', [SocialProofController::class, 'edit'], [$requireAdmin]);
 $router->post('/admin/social-proof/update/{id}', [SocialProofController::class, 'update'], [$requireAdmin]);
 $router->post('/admin/social-proof/delete/{id}', [SocialProofController::class, 'destroy'], [$requireAdmin]);
+
+$router->get('/admin/media', [MediaController::class, 'index'], [$requireAdmin]);
 
 $router->get('/admin/roadmap', [RoadmapController::class, 'index'], [$requireAdmin]);
 $router->get('/admin/roadmap/create', [RoadmapController::class, 'create'], [$requireAdmin]);

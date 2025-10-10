@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Models\Partner;
 use App\Services\Security\Csrf;
 use App\Support\Flash;
+use App\Support\Uploads;
 use PDO;
 
 final class PartnersController extends Controller
@@ -42,7 +43,7 @@ final class PartnersController extends Controller
     {
         $this->assertValidCsrf($_POST['csrf_token'] ?? null, '/admin/partners/create');
 
-        [$partner, $errors] = $this->prepareInput($_POST);
+        [$partner, $errors] = $this->prepareInput($_POST, $_FILES);
         if ($errors) {
             $this->renderForm($partner, $errors, 'Create Partner', '/admin/partners/store');
             return;
@@ -73,7 +74,7 @@ final class PartnersController extends Controller
             $this->redirect('/admin/partners');
         }
 
-        [$partner, $errors] = $this->prepareInput($_POST);
+        [$partner, $errors] = $this->prepareInput($_POST, $_FILES);
         if ($errors) {
             $partner['id'] = $id;
             $this->renderForm($partner, $errors, 'Edit Partner', "/admin/partners/update/{$id}");
@@ -114,23 +115,39 @@ final class PartnersController extends Controller
     /**
      * @return array{0: array, 1: array}
      */
-    private function prepareInput(array $source): array
+    private function prepareInput(array $source, array $files = []): array
     {
+        $logoUrl = trim((string)($source['logo_url'] ?? ''));
         $partner = [
             'name' => trim((string)($source['name'] ?? '')),
-            'logo_url' => trim((string)($source['logo_url'] ?? '')),
+            'logo_url' => $logoUrl,
             'url' => trim((string)($source['url'] ?? '')),
             'summary' => trim((string)($source['summary'] ?? '')),
             'status' => trim((string)($source['status'] ?? 'Active')),
             'featured_order' => max(0, (int)($source['featured_order'] ?? 0)),
         ];
 
-        $errors = $this->validate($partner);
+        $uploadError = null;
+        $hasUpload = $this->hasFileUpload($files['logo_upload'] ?? null);
+        if ($hasUpload) {
+            try {
+                $partner['logo_url'] = $this->storeUploadedFile($files['logo_upload'], $partner['name'] ?: 'partner-logo');
+            } catch (\Throwable $e) {
+                $uploadError = $e->getMessage();
+                $partner['logo_url'] = $logoUrl;
+            }
+        }
+
+        $isUploadValid = $hasUpload && $uploadError === null;
+        $errors = $this->validate($partner, $isUploadValid);
+        if ($uploadError !== null) {
+            $errors[] = $uploadError;
+        }
 
         return [$partner, $errors];
     }
 
-    private function validate(array $partner): array
+    private function validate(array $partner, bool $hasUpload): array
     {
         $errors = [];
 
@@ -138,8 +155,8 @@ final class PartnersController extends Controller
             $errors[] = 'Name is required.';
         }
 
-        if ($partner['logo_url'] === '') {
-            $errors[] = 'Logo URL is required.';
+        if ($partner['logo_url'] === '' && !$hasUpload) {
+            $errors[] = 'Provide a logo URL or upload a new logo.';
         }
 
         if ($partner['url'] === '') {
@@ -167,6 +184,17 @@ final class PartnersController extends Controller
             'status' => 'Active',
             'featured_order' => 0,
         ];
+    }
+
+    private function hasFileUpload(mixed $file): bool
+    {
+        return is_array($file) && ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+    }
+
+    private function storeUploadedFile(array $file, string $nameHint): string
+    {
+        $stored = Uploads::store($file, $nameHint);
+        return '/' . ltrim($stored['path'], '/');
     }
 
     private function assertValidCsrf(?string $token, ?string $redirect = null): void

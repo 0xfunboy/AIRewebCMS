@@ -9,3 +9,13 @@ body {
     padding: 24px;
     box-shadow: 0 6px 24px rgba(0,0,0,0.25);
 }
+
+.media-input__preview {
+    min-height: 160px;
+    padding: 16px;
+}
+
+.media-input__preview img {
+    max-height: 100%;
+    max-width: 100%;
+}

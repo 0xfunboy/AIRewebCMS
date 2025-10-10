@@ -79,8 +79,25 @@
     text-decoration: none;
 }
 
+.admin-toolbar__link--button {
+    border: none;
+    background: transparent;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+}
+
+.admin-toolbar__link--button:hover {
+    text-decoration: underline;
+}
+
 body.admin-toolbar-present .site-header {
-    top: 56px;
+    top: 64px !important;
+}
+
+body.admin-toolbar-present {
+    padding-top: 64px;
 }
 
 @media (max-width: 768px) {
@@ -91,7 +108,11 @@ body.admin-toolbar-present .site-header {
     }
 
     body.admin-toolbar-present .site-header {
-        top: 92px;
+        top: 110px !important;
+    }
+
+    body.admin-toolbar-present {
+        padding-top: 110px;
     }
 }
 

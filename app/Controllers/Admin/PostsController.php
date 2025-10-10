@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Models\BlogPost;
 use App\Services\Security\Csrf;
 use App\Support\Flash;
+use App\Support\Uploads;
 use PDO;
 
 final class PostsController extends Controller
@@ -44,7 +45,7 @@ final class PostsController extends Controller
     {
         $this->assertValidCsrf($_POST['csrf_token'] ?? null, '/admin/posts/create');
 
-        [$post, $errors] = $this->prepareInput($_POST);
+        [$post, $errors] = $this->prepareInput($_POST, $_FILES);
         if ($errors) {
             $this->renderForm($post, $errors, 'Create Post', '/admin/posts/store', 'create');
             return;
@@ -79,7 +80,7 @@ final class PostsController extends Controller
             $this->redirect('/admin/posts');
         }
 
-        [$post, $errors] = $this->prepareInput($_POST, (int)$id);
+        [$post, $errors] = $this->prepareInput($_POST, $_FILES, (int)$id);
         if ($errors) {
             $post['id'] = $id;
             $this->renderForm($post, $errors, 'Edit Post', "/admin/posts/update/{$id}", 'edit');
@@ -123,24 +124,41 @@ final class PostsController extends Controller
     /**
      * @return array{0: array, 1: array}
      */
-    private function prepareInput(array $source, ?int $ignoreId = null): array
+    private function prepareInput(array $source, array $files = [], ?int $ignoreId = null): array
     {
+        $imageUrl = trim((string)($source['image_url'] ?? ''));
         $post = [
             'title' => trim((string)($source['title'] ?? '')),
             'slug' => trim((string)($source['slug'] ?? '')),
             'published_at' => trim((string)($source['published_at'] ?? '')),
-            'image_url' => trim((string)($source['image_url'] ?? '')),
+            'image_url' => $imageUrl,
             'snippet' => trim((string)($source['snippet'] ?? '')),
             'content_html' => (string)($source['content_html'] ?? ''),
             'is_published' => isset($source['is_published']) && $source['is_published'],
         ];
 
-        $errors = $this->validate($post, $ignoreId);
+        $uploadError = null;
+        $hasUpload = $this->hasFileUpload($files['image_upload'] ?? null);
+        if ($hasUpload) {
+            try {
+                $post['image_url'] = $this->storeUploadedFile($files['image_upload'], $post['title'] ?: 'blog-post');
+            } catch (\Throwable $e) {
+                $uploadError = $e->getMessage();
+                $post['image_url'] = $imageUrl;
+            }
+        }
+
+        $isUploadValid = $hasUpload && $uploadError === null;
+
+        $errors = $this->validate($post, $ignoreId, $isUploadValid);
+        if ($uploadError !== null) {
+            $errors[] = $uploadError;
+        }
 
         return [$post, $errors];
     }
 
-    private function validate(array $post, ?int $ignoreId = null): array
+    private function validate(array $post, ?int $ignoreId = null, bool $hasUpload = false): array
     {
         $errors = [];
 
@@ -160,8 +178,8 @@ final class PostsController extends Controller
             $errors[] = 'Published date must be a valid YYYY-MM-DD value.';
         }
 
-        if ($post['image_url'] === '') {
-            $errors[] = 'Image URL is required.';
+        if ($post['image_url'] === '' && !$hasUpload) {
+            $errors[] = 'Provide an image URL or upload a new hero image.';
         }
 
         if ($post['snippet'] === '') {
@@ -195,6 +213,17 @@ final class PostsController extends Controller
     {
         $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
         return $date !== false && $date->format('Y-m-d') === $value;
+    }
+
+    private function hasFileUpload(mixed $file): bool
+    {
+        return is_array($file) && ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+    }
+
+    private function storeUploadedFile(array $file, string $nameHint): string
+    {
+        $stored = Uploads::store($file, $nameHint);
+        return '/' . ltrim($stored['path'], '/');
     }
 
     private function assertValidCsrf(?string $token, ?string $redirect = null): void

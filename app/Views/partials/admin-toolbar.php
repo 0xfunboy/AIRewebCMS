@@ -11,8 +11,9 @@
             <?= $enabled ? 'Inline editing enabled' : 'Inline editing disabled'; ?>
         </span>
         <div class="admin-toolbar__spacer"></div>
-        <a href="/admin/preview" class="admin-toolbar__link admin-toolbar__link--primary">Open Site Preview</a>
-        <a href="/admin/dashboard" class="admin-toolbar__link">Dashboard</a>
-        <a href="/auth/logout" class="admin-toolbar__link">Logout</a>
+        <a href="/admin/dashboard" class="admin-toolbar__link admin-toolbar__link--primary">Dashboard</a>
+        <button type="button" class="admin-toolbar__link admin-toolbar__link--button" data-admin-logout>
+            Logout
+        </button>
     </div>
 </div>

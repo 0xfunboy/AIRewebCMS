@@ -5,6 +5,7 @@ A lightweight PHP + MySQL CMS powering the AIRewardrop agent website. The system
 ## Features
 - **Wallet-based admin login** using WalletConnect v2 with nonce validation and session tracking.
 - **Modular admin dashboard** covering Products, Agents, Partners, Team, Blog Posts, Social Proof, Roadmap (phases + tracks), and global Settings.
+- **Media library explorer** with previews, quick URL copy actions, and the full upload history stored under `public/uploads/`.
 - **Public site pages** rendered through PHP templates that mirror the original Tailwind-styled marketing content.
 - **Automatic seed importer** populates empty tables from `database/seed-data.php` on first run.
 - **MySQL migrations** in `database/schema.sql` aligned with the CMS features (admins, sessions, content tables, etc.).
@@ -73,15 +74,24 @@ Authenticated admins see a toolbar on every public page:
 2. **Editable elements** – when active, blocks marked with `data-model`, `data-key`, and optional `data-id` expose action buttons:
    - **Edit / Save / Cancel** for plain text.
    - **Edit HTML** opens a modal editor for rich text.
-   - **Replace** triggers the secure upload flow for images (png, jpg, jpeg, webp, svg – 5 MB max) saved under `public/uploads/YYYY/MM/`.
+   - **Replace** triggers the secure upload flow for images (png, jpg, jpeg, webp, svg, ico – 5 MB max) saved under `public/uploads/YYYY/MM/`.
 3. **API behind the scenes**
    - `POST /admin/api/update-field` with JSON payload `{ model, key, id?, value, csrf }`.
    - `POST /admin/api/upload-image` accepts multipart data with the same metadata.
    - Responses always include an updated CSRF token. Every change is logged in the `audit_log` table with the admin wallet address.
-4. **Extending inline editing**
+4. **Admin toolbar updates**
+   - The toolbar now sits above the site header, keeping page content offset automatically on desktop and mobile.
+   - A dedicated “Dashboard” shortcut replaces the previous preview link. “Logout” prompts to confirm exiting admin mode before redirecting to `/auth/logout`.
+
+5. **Extending inline editing**
    - Wrap new fields with `<?= \App\Support\AdminMode::dataAttrs('model', 'field', $id); ?>`.
    - Whitelist the pair in `App\Controllers\Admin\AdminInlineController::$modelMap`.
    - Admin assets are loaded only when the user is authenticated, so regular visitors see the original markup untouched.
+
+### Admin Media Library & Upload Fields
+- Every dashboard form that accepts logos, avatars, hero images, or social graphics now includes a **media field** with live previews, manual URL entry, and optional file upload.
+- Uploaded assets are stored beneath `public/uploads/YYYY/MM/<slug>-<hash>.<ext>` via `App\Support\Uploads`. Saved files are automatically prefixed with `/` so they can be dropped directly into inline editing or templates.
+- Visit **Dashboard → Media Library** to browse all uploaded files, open them in a new tab, or copy absolute URLs to your clipboard.
 
 ## Usage
 - Visit `/login` to access the admin area. Configure the allowed wallet addresses in `.env.php`.

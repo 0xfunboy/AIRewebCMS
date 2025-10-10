@@ -1,4 +1,6 @@
 <?php
+use App\Core\View;
+
 /** @var array $partner */
 /** @var array $errors */
 /** @var string $formAction */
@@ -26,7 +28,7 @@
         </div>
     <?php endif; ?>
 
-    <form method="post" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" class="space-y-6">
+    <form method="post" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" class="space-y-6" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
         <label class="text-sm text-muted flex flex-col gap-2">
@@ -37,12 +39,15 @@
         </label>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label class="text-sm text-muted flex flex-col gap-2">
-                <span>Logo URL</span>
-                <input type="url" name="logo_url" required
-                       value="<?= htmlspecialchars($partner['logo_url'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                       class="bg-bg2 border border-stroke rounded-md px-3 py-2 text-acc focus:border-cy focus:outline-none">
-            </label>
+            <div>
+                <?php View::renderPartial('admin/partials/media-input', [
+                    'label' => 'Partner Logo',
+                    'name' => 'logo_url',
+                    'uploadName' => 'logo_upload',
+                    'current' => $partner['logo_url'] ?? '',
+                    'helper' => 'Use PNG, SVG, WEBP, or ICO files up to 5 MB.',
+                ]); ?>
+            </div>
             <label class="text-sm text-muted flex flex-col gap-2">
                 <span>Website URL</span>
                 <input type="url" name="url" required

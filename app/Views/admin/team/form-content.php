@@ -1,4 +1,5 @@
 <?php
+use App\Core\View;
 /** @var array $member */
 /** @var array $errors */
 /** @var string $formAction */
@@ -26,7 +27,7 @@
         </div>
     <?php endif; ?>
 
-    <form method="post" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" class="space-y-6">
+    <form method="post" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" class="space-y-6" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
         <label class="text-sm text-muted flex flex-col gap-2">
@@ -50,12 +51,16 @@
         </label>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label class="text-sm text-muted flex flex-col gap-2">
-                <span>Avatar URL</span>
-                <input type="url" name="avatar_url" required
-                       value="<?= htmlspecialchars($member['avatar_url'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                       class="bg-bg2 border border-stroke rounded-md px-3 py-2 text-acc focus:border-cy focus:outline-none">
-            </label>
+            <div>
+                <?php View::renderPartial('admin/partials/media-input', [
+                    'label' => 'Avatar',
+                    'name' => 'avatar_url',
+                    'uploadName' => 'avatar_upload',
+                    'current' => $member['avatar_url'] ?? '',
+                    'accept' => '.png,.jpg,.jpeg,.webp,.svg',
+                    'helper' => 'Square images at least 512x512 work best.',
+                ]); ?>
+            </div>
             <label class="text-sm text-muted flex flex-col gap-2">
                 <span>Telegram URL (optional)</span>
                 <input type="url" name="telegram_url"

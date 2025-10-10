@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Models\Agent;
 use App\Services\Security\Csrf;
 use App\Support\Flash;
+use App\Support\Uploads;
 use PDO;
 
 final class AgentsController extends Controller
@@ -42,7 +43,7 @@ final class AgentsController extends Controller
     {
         $this->assertValidCsrf($_POST['csrf_token'] ?? null, '/admin/agents/create');
 
-        [$agent, $errors] = $this->prepareInput($_POST);
+        [$agent, $errors] = $this->prepareInput($_POST, $_FILES);
         if ($errors) {
             $this->renderForm($agent, $errors, 'Create Agent', '/admin/agents/store');
             return;
@@ -73,7 +74,7 @@ final class AgentsController extends Controller
             $this->redirect('/admin/agents');
         }
 
-        [$agent, $errors] = $this->prepareInput($_POST);
+        [$agent, $errors] = $this->prepareInput($_POST, $_FILES);
         if ($errors) {
             $agent['id'] = $id;
             $this->renderForm($agent, $errors, 'Edit Agent', "/admin/agents/update/{$id}");
@@ -114,25 +115,42 @@ final class AgentsController extends Controller
     /**
      * @return array{0: array, 1: array}
      */
-    private function prepareInput(array $source): array
+    private function prepareInput(array $source, array $files = []): array
     {
+        $imageUrl = trim((string)($source['image_url'] ?? ''));
         $agent = [
             'name' => trim((string)($source['name'] ?? '')),
             'chain' => trim((string)($source['chain'] ?? '')),
             'status' => trim((string)($source['status'] ?? 'Live')),
             'summary' => trim((string)($source['summary'] ?? '')),
             'site_url' => trim((string)($source['site_url'] ?? '')),
-            'image_url' => trim((string)($source['image_url'] ?? '')),
+            'image_url' => $imageUrl,
             'badge' => trim((string)($source['badge'] ?? '')),
             'featured_order' => max(0, (int)($source['featured_order'] ?? 0)),
         ];
 
-        $errors = $this->validate($agent);
+        $uploadError = null;
+        $hasUpload = $this->hasFileUpload($files['image_upload'] ?? null);
+        if ($hasUpload) {
+            try {
+                $agent['image_url'] = $this->storeUploadedFile($files['image_upload'], $agent['name'] ?: 'agent-image');
+            } catch (\Throwable $e) {
+                $uploadError = $e->getMessage();
+                $agent['image_url'] = $imageUrl;
+            }
+        }
+
+        $isUploadValid = $hasUpload && $uploadError === null;
+
+        $errors = $this->validate($agent, $isUploadValid);
+        if ($uploadError !== null) {
+            $errors[] = $uploadError;
+        }
 
         return [$agent, $errors];
     }
 
-    private function validate(array $agent): array
+    private function validate(array $agent, bool $hasUpload): array
     {
         $errors = [];
 
@@ -156,8 +174,8 @@ final class AgentsController extends Controller
             $errors[] = 'Site URL is required.';
         }
 
-        if ($agent['image_url'] === '') {
-            $errors[] = 'Image URL is required.';
+        if ($agent['image_url'] === '' && !$hasUpload) {
+            $errors[] = 'Provide an image URL or upload a new asset.';
         }
 
         return $errors;
@@ -175,6 +193,17 @@ final class AgentsController extends Controller
             'badge' => '',
             'featured_order' => 0,
         ];
+    }
+
+    private function hasFileUpload(mixed $file): bool
+    {
+        return is_array($file) && ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+    }
+
+    private function storeUploadedFile(array $file, string $nameHint): string
+    {
+        $stored = Uploads::store($file, $nameHint);
+        return '/' . ltrim($stored['path'], '/');
     }
 
     private function assertValidCsrf(?string $token, ?string $redirect = null): void

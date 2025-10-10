@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Models\TeamMember;
 use App\Services\Security\Csrf;
 use App\Support\Flash;
+use App\Support\Uploads;
 use PDO;
 
 final class TeamController extends Controller
@@ -42,7 +43,7 @@ final class TeamController extends Controller
     {
         $this->assertValidCsrf($_POST['csrf_token'] ?? null, '/admin/team/create');
 
-        [$member, $errors] = $this->prepareInput($_POST);
+        [$member, $errors] = $this->prepareInput($_POST, $_FILES);
         if ($errors) {
             $this->renderForm($member, $errors, 'Add Team Member', '/admin/team/store');
             return;
@@ -73,7 +74,7 @@ final class TeamController extends Controller
             $this->redirect('/admin/team');
         }
 
-        [$member, $errors] = $this->prepareInput($_POST);
+        [$member, $errors] = $this->prepareInput($_POST, $_FILES);
         if ($errors) {
             $member['id'] = $id;
             $this->renderForm($member, $errors, 'Edit Team Member', "/admin/team/update/{$id}");
@@ -114,24 +115,41 @@ final class TeamController extends Controller
     /**
      * @return array{0: array, 1: array}
      */
-    private function prepareInput(array $source): array
+    private function prepareInput(array $source, array $files = []): array
     {
+        $avatarUrl = trim((string)($source['avatar_url'] ?? ''));
         $member = [
             'name' => trim((string)($source['name'] ?? '')),
             'role' => trim((string)($source['role'] ?? '')),
             'bio' => trim((string)($source['bio'] ?? '')),
-            'avatar_url' => trim((string)($source['avatar_url'] ?? '')),
+            'avatar_url' => $avatarUrl,
             'telegram_url' => trim((string)($source['telegram_url'] ?? '')),
             'x_url' => trim((string)($source['x_url'] ?? '')),
             'sort_order' => max(0, (int)($source['sort_order'] ?? 0)),
         ];
 
-        $errors = $this->validate($member);
+        $uploadError = null;
+        $hasUpload = $this->hasFileUpload($files['avatar_upload'] ?? null);
+        if ($hasUpload) {
+            try {
+                $member['avatar_url'] = $this->storeUploadedFile($files['avatar_upload'], $member['name'] ?: 'team-avatar');
+            } catch (\Throwable $e) {
+                $uploadError = $e->getMessage();
+                $member['avatar_url'] = $avatarUrl;
+            }
+        }
+
+        $isUploadValid = $hasUpload && $uploadError === null;
+
+        $errors = $this->validate($member, $isUploadValid);
+        if ($uploadError !== null) {
+            $errors[] = $uploadError;
+        }
 
         return [$member, $errors];
     }
 
-    private function validate(array $member): array
+    private function validate(array $member, bool $hasUpload): array
     {
         $errors = [];
 
@@ -147,8 +165,8 @@ final class TeamController extends Controller
             $errors[] = 'Bio is required.';
         }
 
-        if ($member['avatar_url'] === '') {
-            $errors[] = 'Avatar URL is required.';
+        if ($member['avatar_url'] === '' && !$hasUpload) {
+            $errors[] = 'Provide an avatar URL or upload a new image.';
         }
 
         return $errors;
@@ -165,6 +183,17 @@ final class TeamController extends Controller
             'x_url' => '',
             'sort_order' => 0,
         ];
+    }
+
+    private function hasFileUpload(mixed $file): bool
+    {
+        return is_array($file) && ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+    }
+
+    private function storeUploadedFile(array $file, string $nameHint): string
+    {
+        $stored = Uploads::store($file, $nameHint);
+        return '/' . ltrim($stored['path'], '/');
     }
 
     private function assertValidCsrf(?string $token, ?string $redirect = null): void

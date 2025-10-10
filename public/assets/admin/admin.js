@@ -458,11 +458,39 @@ function initToolbar() {
     if (toggle) {
         toggle.addEventListener('click', onToggleClick);
     }
+    const logout = qs('[data-admin-logout]');
+    if (logout) {
+        logout.addEventListener('click', onLogoutClick);
+    }
     if (state.enabled) {
         activateAdminMode();
     } else {
         deactivateAdminMode();
     }
+}
+
+async function onLogoutClick(event) {
+    event.preventDefault();
+    const confirmExit = window.confirm('Vuoi salvare le modifiche e tornare alla modalità utente?');
+    if (!confirmExit) {
+        return;
+    }
+
+    if (state.enabled) {
+        try {
+            const data = await request(endpoints.toggle, {
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: false, csrf: getCsrf() }),
+            });
+            state.enabled = Boolean(data.enabled);
+            deactivateAdminMode();
+        } catch (error) {
+            showToast(error.message, 'error');
+            return;
+        }
+    }
+
+    window.location.href = '/auth/logout';
 }
 
 function toggleButtons(el, visibilityMap) {
