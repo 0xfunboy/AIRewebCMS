@@ -1,5 +1,10 @@
 <?php
 /** @var array<int, array{path:string,url:string,size:int,modified:int,type:string}> $media */
+/** @var string|null $notice */
+/** @var string|null $error */
+
+$notice = $notice ?? null;
+$error = $error ?? null;
 
 $formatSize = static function (int $bytes): string {
     if ($bytes < 1024) {
@@ -39,6 +44,16 @@ $formatSize = static function (int $bytes): string {
                         Optimize to WebP
                     </button>
                 </form>
+                <form method="post" action="/admin/media/upload" data-media-action="upload" enctype="multipart/form-data" class="flex flex-col md:flex-row md:items-center md:gap-2 gap-2">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="text" name="label" placeholder="Label (optional)" class="w-full md:w-40 bg-bg2 border border-stroke rounded-md px-3 py-2 text-acc focus:border-cy focus:outline-none text-xs md:text-sm">
+                    <label class="inline-flex items-center gap-2 text-xs md:text-sm text-muted">
+                        <input type="file" name="file" accept=".png,.jpg,.jpeg,.webp,.svg,.ico" class="text-xs md:text-sm">
+                    </label>
+                    <button type="submit" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-pri text-white text-sm font-medium hover:bg-red-500/80 transition disabled:opacity-60">
+                        Upload
+                    </button>
+                </form>
             </div>
         </div>
         <div class="media-optimize-status hidden" data-media-status>
@@ -47,7 +62,19 @@ $formatSize = static function (int $bytes): string {
         </div>
     </div>
 
-    <?php if (empty($media)): ?>
+<?php if (!empty($notice)): ?>
+    <div class="card border-emerald-500/40 bg-emerald-500/10 text-emerald-100 text-sm">
+        <?= htmlspecialchars($notice, ENT_QUOTES, 'UTF-8'); ?>
+    </div>
+<?php endif; ?>
+
+<?php if (!empty($error)): ?>
+    <div class="card border-red-500/40 bg-red-500/10 text-red-100 text-sm">
+        <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?>
+    </div>
+<?php endif; ?>
+
+<?php if (empty($media)): ?>
         <div class="card text-sm text-muted">
             <p>No assets uploaded yet. Upload images from any editor form to populate the media library.</p>
         </div>

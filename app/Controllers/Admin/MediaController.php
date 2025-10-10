@@ -8,6 +8,8 @@ use App\Core\Database;
 use App\Core\Response;
 use App\Services\Admin\MediaOptimizer;
 use App\Services\Security\Csrf;
+use App\Support\Flash;
+use App\Support\Uploads;
 
 final class MediaController extends Controller
 {
@@ -19,6 +21,8 @@ final class MediaController extends Controller
             'title' => 'Media Library',
             'media' => $library,
             'csrfToken' => Csrf::token(),
+            'notice' => Flash::pull('admin.media.notice'),
+            'error' => Flash::pull('admin.media.error'),
         ]);
     }
 
@@ -29,9 +33,15 @@ final class MediaController extends Controller
         $optimizer = new MediaOptimizer(Database::connection());
         try {
             $report = $optimizer->mirror();
-            Response::json(['ok' => true] + $report);
+            $message = sprintf(
+                'Mirrored %d of %d assets (errors: %d).',
+                $report['processed'],
+                $report['total'],
+                $report['errors']
+            );
+            $this->respond($report, true, $message);
         } catch (\Throwable $e) {
-            Response::json(['ok' => false, 'error' => $e->getMessage()], 500);
+            $this->respond(['error' => $e->getMessage()], false, 'Failed to mirror remote assets.', 500);
         }
     }
 
@@ -42,9 +52,47 @@ final class MediaController extends Controller
         $optimizer = new MediaOptimizer(Database::connection());
         try {
             $report = $optimizer->optimize();
-            Response::json(['ok' => true] + $report);
+            $message = sprintf(
+                'Optimized %d of %d files to WebP (errors: %d).',
+                $report['processed'],
+                $report['total'],
+                $report['errors']
+            );
+            $this->respond($report, true, $message);
         } catch (\Throwable $e) {
-            Response::json(['ok' => false, 'error' => $e->getMessage()], 500);
+            $this->respond(['error' => $e->getMessage()], false, 'Image optimization failed.', 500);
+        }
+    }
+
+    public function upload(): void
+    {
+        $this->assertValidCsrf($_POST['csrf_token'] ?? null);
+
+        if (!isset($_FILES['file']) || ($_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            $this->respond([], false, 'Select a file to upload.', 422);
+        }
+
+        $label = trim((string)($_POST['label'] ?? ($_FILES['file']['name'] ?? 'media')));
+
+        try {
+            $stored = Uploads::store($_FILES['file'], $label !== '' ? $label : 'media');
+            $path = '/' . ltrim($stored['path'], '/');
+            $payload = [
+                'path' => $path,
+                'width' => $stored['width'],
+                'height' => $stored['height'],
+                'steps' => [[
+                    'phase' => 0,
+                    'current' => 1,
+                    'total' => 1,
+                    'message' => sprintf('Uploaded %s', basename($path)),
+                    'status' => 'ok',
+                ]],
+            ];
+            $message = sprintf('Uploaded %s.', basename($path));
+            $this->respond($payload, true, $message);
+        } catch (\Throwable $e) {
+            $this->respond(['error' => $e->getMessage()], false, 'Upload failed.', 400);
         }
     }
 
@@ -96,7 +144,26 @@ final class MediaController extends Controller
             return;
         }
 
-        Response::json(['ok' => false, 'error' => 'Invalid CSRF token'], 403);
-        exit;
+        $this->respond([], false, 'Invalid CSRF token.', 403);
+    }
+
+    private function respond(array $payload, bool $success, string $message, int $statusCode = 200): void
+    {
+        if ($this->wantsJson()) {
+            $body = ['ok' => $success, 'message' => $message] + $payload;
+            Response::json($body, $success ? $statusCode : ($statusCode >= 400 ? $statusCode : 400));
+            return;
+        }
+
+        $key = $success ? 'admin.media.notice' : 'admin.media.error';
+        Flash::set($key, $message);
+        $this->redirect('/admin/media');
+    }
+
+    private function wantsJson(): bool
+    {
+        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+        $requestedWith = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
+        return str_contains($accept, 'application/json') || strcasecmp($requestedWith, 'XMLHttpRequest') === 0;
     }
 }

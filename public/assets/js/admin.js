@@ -157,6 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mediaTools.querySelectorAll('form[data-media-action]').forEach((form) => {
             const action = form.getAttribute('data-media-action') || 'optimize';
             const button = form.querySelector('button[type="submit"]');
+            const fileInput = form.querySelector('input[type="file"]');
 
             form.addEventListener('submit', async (event) => {
                 event.preventDefault();
@@ -164,16 +165,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (button) {
                     button.disabled = true;
                     button.dataset.originalLabel = button.textContent || '';
-                    button.textContent = action === 'mirror' ? 'Mirroring…' : 'Optimizing…';
+                    if (action === 'mirror') {
+                        button.textContent = 'Mirroring…';
+                    } else if (action === 'upload') {
+                        button.textContent = 'Uploading…';
+                    } else {
+                        button.textContent = 'Optimizing…';
+                    }
+                }
+
+                if (action === 'upload' && (!fileInput || !fileInput.files || fileInput.files.length === 0)) {
+                    if (summary) {
+                        summary.textContent = 'Select a file to upload.';
+                    }
+                    if (button) {
+                        button.disabled = false;
+                        button.textContent = button.dataset.originalLabel || button.textContent;
+                        delete button.dataset.originalLabel;
+                    }
+                    return;
                 }
 
                 if (statusBox) {
                     statusBox.classList.remove('hidden');
                 }
                 if (summary) {
-                    summary.textContent = action === 'mirror'
-                        ? 'Phase 1 – mirroring remote assets…'
-                        : 'Phase 2 – converting images to WebP…';
+                    if (action === 'mirror') {
+                        summary.textContent = 'Phase 1 – mirroring remote assets…';
+                    } else if (action === 'upload') {
+                        summary.textContent = 'Uploading media…';
+                    } else {
+                        summary.textContent = 'Phase 2 – converting images to WebP…';
+                    }
                 }
                 if (logList) {
                     logList.innerHTML = '';
@@ -214,8 +237,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (summary) {
-                        if (action === 'mirror') {
+                        if (data.message) {
+                            summary.textContent = data.message;
+                        } else if (action === 'mirror') {
                             summary.textContent = `Mirrored ${data.processed}/${data.total} assets (errors: ${data.errors}).`;
+                        } else if (action === 'upload') {
+                            summary.textContent = 'Upload complete.';
                         } else {
                             summary.textContent = `Converted ${data.processed}/${data.total} files to WebP (errors: ${data.errors}).`;
                         }

@@ -100,6 +100,10 @@ body.admin-toolbar-present {
     padding-top: 72px;
 }
 
+.admin-toolbar-present .site-header {
+    top: 72px;
+}
+
 @media (max-width: 768px) {
     .admin-toolbar__inner {
         flex-direction: column;
@@ -109,6 +113,10 @@ body.admin-toolbar-present {
 
     body.admin-toolbar-present {
         padding-top: 110px;
+    }
+
+    .admin-toolbar-present .site-header {
+        top: 110px;
     }
 }
 
