@@ -5,7 +5,7 @@ A lightweight PHP + MySQL CMS powering the AIRewardrop agent website. The system
 ## Features
 - **Wallet-based admin login** using WalletConnect v2 with nonce validation and session tracking.
 - **Modular admin dashboard** covering Products, Agents, Partners, Team, Blog Posts, Social Proof, Roadmap (phases + tracks), and global Settings.
-- **Media library explorer** with previews, quick URL copy actions, and the full upload history stored under `public/uploads/`.
+- **Media library explorer** with previews, quick URL copy actions, and the full upload history stored under `public/media/`.
 - **Public site pages** rendered through PHP templates that mirror the original Tailwind-styled marketing content.
 - **Automatic seed importer** populates empty tables from `database/seed-data.php` on first run.
 - **MySQL migrations** in `database/schema.sql` aligned with the CMS features (admins, sessions, content tables, etc.).
@@ -74,7 +74,7 @@ Authenticated admins see a toolbar on every public page:
 2. **Editable elements** – when active, blocks marked with `data-model`, `data-key`, and optional `data-id` expose action buttons:
    - **Edit / Save / Cancel** for plain text.
    - **Edit HTML** opens a modal editor for rich text.
-   - **Replace** triggers the secure upload flow for images (png, jpg, jpeg, webp, svg, ico – 5 MB max) saved under `public/uploads/YYYY/MM/`.
+   - **Replace** triggers the secure upload flow for images (png, jpg, jpeg, webp, svg, ico – 5 MB max) saved under `public/media/YYYY/MM/`. SVG uploads are sanitised and rasterised to PNG automatically.
 3. **API behind the scenes**
    - `POST /admin/api/update-field` with JSON payload `{ model, key, id?, value, csrf }`.
    - `POST /admin/api/upload-image` accepts multipart data with the same metadata.
@@ -90,7 +90,7 @@ Authenticated admins see a toolbar on every public page:
 
 ### Admin Media Library & Upload Fields
 - Every dashboard form that accepts logos, avatars, hero images, or social graphics now includes a **media field** with live previews, manual URL entry, and optional file upload.
-- Uploaded assets are stored beneath `public/uploads/YYYY/MM/<slug>-<hash>.<ext>` via `App\Support\Uploads`. Saved files are automatically prefixed with `/` so they can be dropped directly into inline editing or templates.
+- Uploaded assets are stored beneath `public/media/YYYY/MM/<slug>-<hash>.<ext>` via `App\Support\Uploads`. SVGs are converted into transparent PNGs (when ImageMagick is available) and every path is returned with a leading `/` so you can drop it straight into inline editing or templates.
 - Visit **Dashboard → Media Library** to browse all uploaded files, open them in a new tab, or copy absolute URLs to your clipboard.
 
 ## Usage

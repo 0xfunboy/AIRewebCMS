@@ -24,7 +24,7 @@ final class MediaController extends Controller
      */
     private function gatherMedia(): array
     {
-        $root = dirname(__DIR__, 2) . '/public/uploads';
+        $root = dirname(__DIR__, 2) . '/public/media';
         if (!is_dir($root)) {
             return [];
         }
@@ -61,4 +61,3 @@ final class MediaController extends Controller
         return $files;
     }
 }
-

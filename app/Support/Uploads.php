@@ -7,6 +7,7 @@ final class Uploads
 {
     private const ALLOWED_EXT = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'ico'];
     private const MAX_BYTES = 5_000_000;
+    private const BASE_DIR = 'media';
 
     /**
      * @return array{path:string,width:?int,height:?int}
@@ -58,7 +59,7 @@ final class Uploads
         $hash = substr(sha1_file($file['tmp_name']) ?: bin2hex(random_bytes(8)), 0, 10);
         $filename = sprintf('%s-%s.%s', $slug, $hash, $ext);
 
-        $relativeDir = 'uploads/' . date('Y/m');
+        $relativeDir = self::BASE_DIR . '/' . date('Y/m');
         $basePath = dirname(__DIR__, 2) . '/public/' . $relativeDir;
         if (!is_dir($basePath) && !mkdir($basePath, 0775, true) && !is_dir($basePath)) {
             throw new \RuntimeException('Unable to create upload directory.');
@@ -73,6 +74,13 @@ final class Uploads
             if (file_put_contents($target, $sanitizedSvg, LOCK_EX) === false) {
                 @unlink($target);
                 throw new \RuntimeException('Unable to write sanitized SVG.');
+            }
+
+            $converted = self::convertSvgToPng($sanitizedSvg, $slug, $hash, $basePath);
+            if ($converted !== null) {
+                @unlink($target);
+                $filename = $converted['filename'];
+                $dimensions = [$converted['width'], $converted['height']];
             }
         }
 
@@ -229,5 +237,40 @@ final class Uploads
         $value = preg_replace('/[^a-z0-9]+/', '-', $value) ?? $value;
         $value = trim($value, '-');
         return $value !== '' ? $value : 'image';
+    }
+
+    /**
+     * @return array{filename:string,width:int,height:int}|null
+     */
+    private static function convertSvgToPng(string $svgContent, string $slug, string $hash, string $basePath): ?array
+    {
+        if (!class_exists(\Imagick::class)) {
+            return null;
+        }
+
+        $imagick = new \Imagick();
+        try {
+            $imagick->setBackgroundColor('transparent');
+            $imagick->setResolution(300, 300);
+            $imagick->readImageBlob($svgContent);
+            $imagick->setImageFormat('png32');
+
+            $pngFilename = sprintf('%s-%s.png', $slug, $hash);
+            $pngPath = $basePath . '/' . $pngFilename;
+            if (!$imagick->writeImage($pngPath)) {
+                return null;
+            }
+
+            return [
+                'filename' => $pngFilename,
+                'width' => $imagick->getImageWidth(),
+                'height' => $imagick->getImageHeight(),
+            ];
+        } catch (\Throwable) {
+            return null;
+        } finally {
+            $imagick->clear();
+            $imagick->destroy();
+        }
     }
 }
