@@ -208,6 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const response = await fetch(form.getAttribute('action') || '/admin/media/optimize', {
                         method: 'POST',
                         headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
                         body: formData,
                     });
 
