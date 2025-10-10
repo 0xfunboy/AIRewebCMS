@@ -50,9 +50,9 @@ async function request(url, options) {
         body: options?.body,
     });
 
-    const data = await response.json().catch(() => ({ ok: false, error: 'Risposta non valida' }));
+    const data = await response.json().catch(() => ({ ok: false, error: 'Invalid response from server.' }));
     if (!response.ok || !data.ok) {
-        throw new Error(data.error || 'Errore sconosciuto');
+        throw new Error(data.error || 'Unknown error.');
     }
 
     if (data.csrf) {
@@ -111,12 +111,12 @@ function updateToolbarStatus(enabled) {
 
     const status = qs('[data-admin-status]');
     if (status) {
-        status.textContent = enabled ? 'Modifica in-page attiva' : 'Modifica in-page disattivata';
+        status.textContent = enabled ? 'Inline editing enabled' : 'Inline editing disabled';
     }
 
     const toggle = qs('[data-admin-toggle]');
     if (toggle) {
-        toggle.textContent = enabled ? 'Disattiva modalità' : 'Attiva modalità';
+        toggle.textContent = enabled ? 'Disable Admin Mode' : 'Enable Admin Mode';
     }
 }
 
@@ -169,7 +169,12 @@ function wrapWithControls(el, type) {
     controls.setAttribute('data-admin-controls', '');
 
     if (type === 'image') {
-        const replaceBtn = createActionButton('Replace', () => triggerImageReplace(el));
+        const replaceBtn = createActionButton('Replace', () => {
+            const currentTarget = wrapper.querySelector('[data-model][data-key]');
+            if (currentTarget) {
+                triggerImageReplace(currentTarget, wrapper);
+            }
+        });
         controls.appendChild(replaceBtn);
     } else if (type === 'url') {
         const editBtn = createActionButton('Edit URL', () => startEditing(el));
@@ -221,7 +226,7 @@ function startEditing(el) {
 
     if (type === 'url') {
         const current = el.getAttribute('href') || '';
-        const next = window.prompt('Nuovo URL', current) || '';
+        const next = window.prompt('New URL', current) || '';
         if (!next || next === current) {
             return;
         }
@@ -236,7 +241,7 @@ function startEditing(el) {
                 if (data.value) {
                     el.setAttribute('href', data.value);
                 }
-                showToast('Salvato');
+                showToast('Saved');
             })
             .catch((error) => {
                 showToast(error.message, 'error');
@@ -283,7 +288,7 @@ async function saveEditing(el) {
         el.removeAttribute('contenteditable');
         el.classList.remove('admin-editing-outline');
         toggleButtons(el, { edit: true, save: false, cancel: false });
-        showToast('Salvato');
+        showToast('Saved');
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -299,19 +304,24 @@ function buildPayload(el, value) {
     };
 }
 
-function triggerImageReplace(img) {
+function triggerImageReplace(element, wrapper = null) {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.png,.jpg,.jpeg,.webp,.svg';
+    input.accept = '.png,.jpg,.jpeg,.webp,.svg,.ico';
     input.addEventListener('change', async () => {
         if (!input.files || !input.files[0]) return;
         try {
+            const target = ensureImageElement(element, wrapper);
+            if (!target) {
+                throw new Error('Unable to determine image target.');
+            }
+
             const formData = new FormData();
             formData.append('file', input.files[0]);
-            formData.append('model', img.dataset.model || '');
-            formData.append('key', img.dataset.key || '');
-            if (img.dataset.id) {
-                formData.append('id', img.dataset.id);
+            formData.append('model', target.dataset.model || '');
+            formData.append('key', target.dataset.key || '');
+            if (target.dataset.id) {
+                formData.append('id', target.dataset.id);
             }
             formData.append('csrf', getCsrf());
 
@@ -320,13 +330,50 @@ function triggerImageReplace(img) {
             });
 
             const cacheBuster = data.cache_buster || (`?v=${Date.now()}`);
-            img.src = `${data.path}${cacheBuster}`;
-            showToast('Immagine aggiornata');
+            if (data.path) {
+                target.src = `${data.path}${cacheBuster}`;
+            }
+            showToast('Image updated');
         } catch (error) {
             showToast(error.message, 'error');
         }
     });
     input.click();
+}
+
+function ensureImageElement(element, wrapper) {
+    if (!element) {
+        return null;
+    }
+
+    if (element.tagName === 'IMG') {
+        element.dataset.fieldType = 'image';
+        element.dataset.adminSetup = 'true';
+        return element;
+    }
+
+    const img = document.createElement('img');
+    img.className = element.className || 'h-9 w-auto';
+
+    Array.from(element.attributes).forEach((attr) => {
+        if (attr.name.startsWith('data-')) {
+            img.setAttribute(attr.name, attr.value);
+        }
+    });
+
+    img.dataset.fieldType = 'image';
+    img.dataset.adminSetup = 'true';
+
+    const alt = element.getAttribute('alt') || element.getAttribute('data-alt') || (element.textContent || '').trim();
+    img.alt = alt || 'Site logo';
+
+    if (element.parentNode) {
+        element.parentNode.replaceChild(img, element);
+    } else if (wrapper) {
+        wrapper.insertBefore(img, wrapper.firstChild);
+    }
+
+    return img;
 }
 
 let htmlModal = null;
@@ -349,7 +396,7 @@ function openHtmlModal(el) {
     const cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';
     cancelBtn.className = 'admin-modal__button cancel';
-    cancelBtn.textContent = 'Annulla';
+    cancelBtn.textContent = 'Cancel';
     cancelBtn.addEventListener('click', () => {
         closeHtmlModal();
     });
@@ -357,7 +404,7 @@ function openHtmlModal(el) {
     const saveBtn = document.createElement('button');
     saveBtn.type = 'button';
     saveBtn.className = 'admin-modal__button save';
-    saveBtn.textContent = 'Salva';
+    saveBtn.textContent = 'Save';
     saveBtn.addEventListener('click', async () => {
         try {
             const payload = buildPayload(el, textarea.value);
@@ -368,7 +415,7 @@ function openHtmlModal(el) {
                 body: JSON.stringify(payload),
             });
             el.innerHTML = data.value ?? textarea.value;
-            showToast('Salvato');
+            showToast('Saved');
             closeHtmlModal();
         } catch (error) {
             showToast(error.message, 'error');

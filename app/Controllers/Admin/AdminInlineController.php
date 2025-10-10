@@ -31,7 +31,17 @@ final class AdminInlineController extends Controller
                 'hero_subtitle_home' => 'text',
                 'hero_badge_home' => 'text',
                 'hero_image_home' => 'image',
+                'site_logo' => 'image',
+                'favicon_path' => 'image',
                 'og_image' => 'image',
+                'seo_meta_title' => 'string',
+                'seo_meta_description' => 'text',
+                'seo_social_title' => 'string',
+                'seo_social_description' => 'text',
+                'seo_twitter_description' => 'text',
+                'seo_telegram_description' => 'text',
+                'seo_discord_description' => 'text',
+                'seo_share_image' => 'image',
             ],
         ],
         'products' => [
@@ -46,7 +56,7 @@ final class AdminInlineController extends Controller
                 'cta_link' => 'url',
                 'content_html' => 'html',
                 'icon_key' => 'string',
-                'external_link' => 'string',
+                'external_link' => 'url',
             ],
         ],
         'agents' => [
@@ -223,8 +233,9 @@ final class AdminInlineController extends Controller
 
         try {
             $stored = Uploads::store($_FILES['file'], ($model === 'settings' ? $key : (string)$idValue) . '-' . $key);
-            $oldValue = $this->performUpdate($model, $key, $stored['path'], $idValue);
-            $this->logChange($model, $key, $idValue, $oldValue, $stored['path']);
+            $storedPath = '/' . ltrim($stored['path'], '/');
+            $oldValue = $this->performUpdate($model, $key, $storedPath, $idValue);
+            $this->logChange($model, $key, $idValue, $oldValue, $storedPath);
         } catch (\Throwable $e) {
             Response::json(['ok' => false, 'error' => $e->getMessage()], 400);
             return;
@@ -232,7 +243,7 @@ final class AdminInlineController extends Controller
 
         Response::json([
             'ok' => true,
-            'path' => $stored['path'],
+            'path' => $storedPath,
             'width' => $stored['width'],
             'height' => $stored['height'],
             'cache_buster' => '?v=' . time(),
@@ -249,9 +260,22 @@ final class AdminInlineController extends Controller
             'text' => mb_substr(strip_tags($value), 0, 5000),
             'html' => $this->sanitizeHtml($value),
             'url' => $this->sanitizeUrl($value),
-            'image' => $value,
+            'image' => $this->sanitizeImagePath($value),
             default => $value,
         };
+    }
+
+    private function sanitizeImagePath(string $value): string
+    {
+        if ($value === '') {
+            return '';
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return '/' . ltrim($value, '/');
     }
 
     private function sanitizeHtml(string $value): string
@@ -319,20 +343,20 @@ final class AdminInlineController extends Controller
         $stmt->execute(['id' => $selector]);
         $oldValue = $stmt->fetchColumn();
         if ($oldValue === false) {
-            throw new \RuntimeException('Record non trovato.');
+            throw new \RuntimeException('Record not found.');
         }
 
         if ($model === 'agents' && $key === 'status') {
             $allowed = ['Live', 'In Development'];
             if (!in_array($value, $allowed, true)) {
-                throw new \RuntimeException('Status non valido.');
+                throw new \RuntimeException('Invalid status value.');
             }
         }
 
         if ($model === 'partners' && $key === 'status') {
             $allowed = ['Active', 'In Discussion'];
             if (!in_array($value, $allowed, true)) {
-                throw new \RuntimeException('Status non valido.');
+                throw new \RuntimeException('Invalid status value.');
             }
         }
 

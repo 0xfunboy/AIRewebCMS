@@ -3,16 +3,17 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 100;
+    z-index: 200;
     background: rgba(15, 15, 30, 0.95);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     font-family: 'Inter', sans-serif;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
 
 .admin-toolbar__inner {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 10px 16px;
+    padding: 8px 16px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -49,7 +50,7 @@
 }
 
 .admin-toolbar__status {
-    opacity: 0.8;
+    opacity: 0.75;
 }
 
 .admin-toolbar__spacer {
@@ -64,6 +65,34 @@
 
 .admin-toolbar__link:hover {
     text-decoration: underline;
+}
+
+.admin-toolbar__link--primary {
+    background: rgba(53, 224, 255, 0.18);
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #35e0ff;
+}
+
+.admin-toolbar__link--primary:hover {
+    background: rgba(53, 224, 255, 0.3);
+    text-decoration: none;
+}
+
+body.admin-toolbar-present .site-header {
+    top: 56px;
+}
+
+@media (max-width: 768px) {
+    .admin-toolbar__inner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    body.admin-toolbar-present .site-header {
+        top: 92px;
+    }
 }
 
 body.admin-mode-active .admin-editing-outline {

@@ -4,12 +4,19 @@ use App\Support\AdminMode;
 
 $settings = $settings ?? [];
 $siteName = $settings['site_name'] ?? 'AIRewardrop';
+$siteLogo = $siteLogo ?? '';
 ?>
-<header class="fixed top-0 left-0 right-0 z-50 bg-bg/80 backdrop-blur-lg border-b border-stroke">
+<header class="site-header fixed top-0 left-0 right-0 z-50 bg-bg/80 backdrop-blur-lg border-b border-stroke transition-all">
     <div class="container mx-auto max-w-6xl px-4">
         <div class="flex h-20 items-center justify-between">
             <a href="/" class="flex items-center gap-2 text-xl font-bold text-acc">
-                <?php View::renderPartial('partials/logo', ['class' => 'h-8 w-8 text-pri']); ?>
+                <?php if ($siteLogo): ?>
+                    <img src="<?= htmlspecialchars($siteLogo, ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8'); ?>" class="h-9 w-auto"<?= AdminMode::dataAttrs('settings', 'site_logo', null, 'image'); ?>>
+                <?php else: ?>
+                    <span class="inline-flex h-9 w-9 items-center justify-center text-pri" data-alt="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8'); ?>"<?= AdminMode::dataAttrs('settings', 'site_logo', null, 'image'); ?>>
+                        <?php View::renderPartial('partials/logo', ['class' => 'h-8 w-8 text-pri']); ?>
+                    </span>
+                <?php endif; ?>
                 <span<?= AdminMode::dataAttrs('settings', 'site_name'); ?><?= AdminMode::isAdmin() ? ' class="admin-editable-text"' : ''; ?>>
                     <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8'); ?>
                 </span>

@@ -5,7 +5,7 @@ namespace App\Support;
 
 final class Uploads
 {
-    private const ALLOWED_EXT = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
+    private const ALLOWED_EXT = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'ico'];
     private const MAX_BYTES = 5_000_000;
 
     /**
@@ -14,36 +14,41 @@ final class Uploads
     public static function store(array $file, string $nameHint): array
     {
         if (!isset($file['tmp_name'], $file['error'], $file['size'])) {
-            throw new \RuntimeException('File upload non valido.');
+            throw new \RuntimeException('Invalid file upload payload.');
         }
 
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            throw new \RuntimeException('Errore upload: ' . self::errorMessage($file['error']));
+            throw new \RuntimeException('Upload error: ' . self::errorMessage($file['error']));
         }
 
         if ($file['size'] > self::MAX_BYTES) {
-            throw new \RuntimeException('Il file supera il limite di 5 MB.');
+            throw new \RuntimeException('File exceeds the 5 MB limit.');
         }
 
         $originalName = (string)($file['name'] ?? 'upload');
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         if (!in_array($ext, self::ALLOWED_EXT, true)) {
-            throw new \RuntimeException('Estensione non permessa.');
+            throw new \RuntimeException('File type not allowed.');
         }
 
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $mime = $finfo->file($file['tmp_name']) ?: '';
         if (!self::isAllowedMime($mime, $ext)) {
-            throw new \RuntimeException('Formato non riconosciuto.');
+            throw new \RuntimeException('File format not recognized.');
         }
 
         $dimensions = [null, null];
         if ($ext !== 'svg') {
             $info = @getimagesize($file['tmp_name']);
             if (!$info) {
-                throw new \RuntimeException('Immagine non valida.');
+                if ($ext === 'ico') {
+                    $dimensions = [null, null];
+                } else {
+                    throw new \RuntimeException('Invalid image file.');
+                }
+            } else {
+                $dimensions = [$info[0], $info[1]];
             }
-            $dimensions = [$info[0], $info[1]];
         } else {
             self::validateSvg($file['tmp_name']);
         }
@@ -55,12 +60,12 @@ final class Uploads
         $relativeDir = 'uploads/' . date('Y/m');
         $basePath = dirname(__DIR__, 2) . '/public/' . $relativeDir;
         if (!is_dir($basePath) && !mkdir($basePath, 0775, true) && !is_dir($basePath)) {
-            throw new \RuntimeException('Impossibile creare la cartella upload.');
+            throw new \RuntimeException('Unable to create upload directory.');
         }
 
         $target = $basePath . '/' . $filename;
         if (!move_uploaded_file($file['tmp_name'], $target)) {
-            throw new \RuntimeException('Impossibile salvare il file caricato.');
+            throw new \RuntimeException('Unable to save uploaded file.');
         }
 
         return [
@@ -79,34 +84,43 @@ final class Uploads
             'jpeg' => 'image/jpeg',
             'webp' => 'image/webp',
             'svg' => 'image/svg+xml',
+            'ico' => 'image/x-icon',
         ];
 
-        return isset($map[$ext]) && str_starts_with($mime, $map[$ext]);
+        if (!isset($map[$ext])) {
+            return false;
+        }
+
+        if ($ext === 'ico') {
+            return str_starts_with($mime, 'image/x-icon') || str_starts_with($mime, 'image/vnd.microsoft.icon');
+        }
+
+        return str_starts_with($mime, $map[$ext]);
     }
 
     private static function validateSvg(string $path): void
     {
         $contents = file_get_contents($path);
         if ($contents === false) {
-            throw new \RuntimeException('Impossibile leggere lo SVG.');
+            throw new \RuntimeException('Unable to read SVG file.');
         }
 
         $lower = strtolower($contents);
         if (str_contains($lower, '<script') || preg_match('/on\w+=/i', $contents)) {
-            throw new \RuntimeException('Lo SVG contiene script non ammessi.');
+            throw new \RuntimeException('SVG contains disallowed scripts.');
         }
     }
 
     private static function errorMessage(int $code): string
     {
         return match ($code) {
-            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'File troppo grande.',
-            UPLOAD_ERR_PARTIAL => 'Upload parziale.',
-            UPLOAD_ERR_NO_FILE => 'Nessun file inviato.',
-            UPLOAD_ERR_NO_TMP_DIR => 'Cartella temporanea mancante.',
-            UPLOAD_ERR_CANT_WRITE => 'Impossibile scrivere su disco.',
-            UPLOAD_ERR_EXTENSION => 'Upload bloccato da un\'estensione PHP.',
-            default => 'Errore sconosciuto.',
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'File too large.',
+            UPLOAD_ERR_PARTIAL => 'Upload was incomplete.',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Temporary folder is missing.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write to disk.',
+            UPLOAD_ERR_EXTENSION => 'Upload blocked by a PHP extension.',
+            default => 'Unknown upload error.',
         };
     }
 

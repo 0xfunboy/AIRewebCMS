@@ -11,6 +11,17 @@ return [
         ['setting_key' => 'hero_subtitle_home', 'setting_value' => 'AIRewardrop designs, ships, and operates always-on agents across multiple chains - live charts, on-chain analytics, and tokenized dApps. We’re the builders behind AIR3 and the Agent Swarm.'],
         ['setting_key' => 'hero_image_home', 'setting_value' => 'https://picsum.photos/seed/hero-agent/600/500'],
         ['setting_key' => 'hero_badge_home', 'setting_value' => '#4 Most Credible Agent by Ethos Network (Q4 2025).'],
+        ['setting_key' => 'site_logo', 'setting_value' => ''],
+        ['setting_key' => 'favicon_path', 'setting_value' => '/favicon.svg'],
+        ['setting_key' => 'og_image', 'setting_value' => 'https://picsum.photos/seed/og-image/800/420'],
+        ['setting_key' => 'seo_meta_title', 'setting_value' => 'AIRewardrop | Autonomous Agent Infrastructure for Crypto'],
+        ['setting_key' => 'seo_meta_description', 'setting_value' => 'AIRewardrop builds, deploys, and maintains autonomous agents that deliver real-time market intelligence, on-chain automation, and community engagement.'],
+        ['setting_key' => 'seo_social_title', 'setting_value' => 'AIRewardrop – Autonomous Agent Infrastructure'],
+        ['setting_key' => 'seo_social_description', 'setting_value' => 'Discover AIRewardrop’s multi-chain agent stack powering analytics, execution, and community automation.'],
+        ['setting_key' => 'seo_twitter_description', 'setting_value' => 'AIRewardrop | Autonomous agents delivering analytics, execution, and community engagement.'],
+        ['setting_key' => 'seo_telegram_description', 'setting_value' => 'The AIR3 ecosystem delivers agent automation, analytics, and community utilities across chains.'],
+        ['setting_key' => 'seo_discord_description', 'setting_value' => 'AIRewardrop supplies always-on agents, analytics, and automation for crypto teams.'],
+        ['setting_key' => 'seo_share_image', 'setting_value' => 'https://picsum.photos/seed/share-image/1200/630'],
         ['setting_key' => 'roadmap_vision', 'setting_value' => <<<'TEXT'
 AIRewardrop builds, maintains, and deploys autonomous agents for the crypto and DeFi world - agents that analyze markets in real time, talk, visualize data, act on-chain, and generate verifiable economic value. The goal is not to make "a single bot," but to create a framework of multi-chain, multi-purpose agents, each capable of operating autonomously or for partner teams, all connected by the $AIR3 token and a shared revenue model.
 TEXT
