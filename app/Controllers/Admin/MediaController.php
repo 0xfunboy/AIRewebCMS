@@ -101,34 +101,13 @@ final class MediaController extends Controller
      */
     private function gatherMedia(): array
     {
-        $root = dirname(__DIR__, 2) . '/public/media';
-        if (!is_dir($root)) {
+        $root = realpath(dirname(__DIR__, 2) . '/public/media');
+        if ($root === false || !is_dir($root)) {
             return [];
         }
 
         $files = [];
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)
-        );
-
-        /** @var \SplFileInfo $file */
-        foreach ($iterator as $file) {
-            if (!$file->isFile()) {
-                continue;
-            }
-
-            $relativePath = str_replace($root, '', $file->getPathname());
-            $relativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
-            $extension = strtolower($file->getExtension());
-
-            $files[] = [
-                'path' => $relativePath,
-                'url' => '/media/' . $relativePath,
-                'size' => $file->getSize(),
-                'modified' => $file->getMTime(),
-                'type' => $extension,
-            ];
-        }
+        $this->scanMediaDirectory($root, $files, strlen(realpath(dirname(__DIR__, 2) . '/public')) + 1);
 
         usort(
             $files,
@@ -136,6 +115,43 @@ final class MediaController extends Controller
         );
 
         return $files;
+    }
+
+    private function scanMediaDirectory(string $dir, array &$files, int $rootLength): void
+    {
+        $items = @scandir($dir);
+        if ($items === false) {
+            \App\Core\Logger::debug('Media scan skipped directory', ['directory' => $dir]);
+            return;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                $this->scanMediaDirectory($path, $files, $rootLength);
+                continue;
+            }
+
+            if (!is_file($path)) {
+                continue;
+            }
+
+            $relativePath = substr($path, $rootLength);
+            $relativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
+            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+            $files[] = [
+                'path' => $relativePath,
+                'url' => '/' . $relativePath,
+                'size' => filesize($path) ?: 0,
+                'modified' => filemtime($path) ?: 0,
+                'type' => $extension,
+            ];
+        }
     }
 
     private function assertValidCsrf(?string $token): void
