@@ -64,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($errors) && !file_exists($loc
         }
 
         require $projectRoot . '/app/bootstrap.php';
+        \App\Support\SeedImporter::ensureSeeded();
 
         if (!file_exists(dirname($lockFile))) {
             mkdir(dirname($lockFile), 0775, true);

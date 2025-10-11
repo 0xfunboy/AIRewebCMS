@@ -7,7 +7,7 @@ A lightweight PHP + MySQL CMS powering the AIRewardrop agent website. The system
 - **Modular admin dashboard** covering Products, Agents, Partners, Team, Blog Posts, Social Proof, Roadmap (phases + tracks), and global Settings.
 - **Media library explorer & optimizer** with previews, quick URL copy actions, plus dedicated actions to mirror external assets locally and convert the entire library to WebP under `public/media/`.
 - **Public site pages** rendered through PHP templates that mirror the original Tailwind-styled marketing content.
-- **Automatic seed importer** populates empty tables from `database/seed-data.php` on first run.
+- **Installer seeding**: the setup wizard (`public/install.php`) runs the schema and populates starter content from `database/seed-data.php` one time.
 - **MySQL migrations** in `database/schema.sql` aligned with the CMS features (admins, sessions, content tables, etc.).
 - **Extensible service layer** (`app/Services`) for additional content modules and integrations.
 - **Inline admin editing**: authenticated admins can toggle an in-page editing mode, adjust texts/URLs/images, and upload media directly from the frontend.
@@ -53,11 +53,7 @@ AIRewebCMS/
    ```bash
    mysql -u aire_user -p aireweb < database/schema.sql
    ```
-5. *(Optional but recommended)* Import the starter content from the TypeScript constants:
-   ```bash
-   php scripts/import.php
-   ```
-   The CMS also ships with an automatic importer that seeds tables from `database/seed-data.php` the first time the app boots if they are empty.
+5. *(Opzionale)* Se vuoi usare i vecchi seed TypeScript, puoi lanciare: `php scripts/import.php`.
 6. **Esegui il wizard di installazione** (solo la prima volta):
    - Carica il progetto sul server.
    - Visita `https://tuodominio/install.php` e clicca “Avvia installazione”. Lo script crea le tabelle e importa i seed.

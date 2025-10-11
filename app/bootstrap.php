@@ -58,11 +58,9 @@ if (PHP_SAPI !== 'cli' && session_status() !== PHP_SESSION_ACTIVE) {
 \App\Core\Logger::init(BASE_PATH . '/storage/logs/app.log', (bool)($config['app']['debug'] ?? false));
 
 try {
-    $GLOBALS['pdo'] = \App\Core\Database::connection();
+$GLOBALS['pdo'] = \App\Core\Database::connection();
 } catch (\Throwable $e) {
     http_response_code(500);
     echo 'DB error: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
     exit;
 }
-
-\App\Support\SeedImporter::ensureSeeded();
