@@ -12,7 +12,7 @@ return [
         ['setting_key' => 'hero_image_home', 'setting_value' => 'https://picsum.photos/seed/hero-agent/600/500'],
         ['setting_key' => 'hero_badge_home', 'setting_value' => '#4 Most Credible Agent by Ethos Network (Q4 2025).'],
         ['setting_key' => 'site_logo', 'setting_value' => ''],
-        ['setting_key' => 'favicon_path', 'setting_value' => '/favicon.svg'],
+        ['setting_key' => 'favicon_path', 'setting_value' => '/favicon.ico'],
         ['setting_key' => 'og_image', 'setting_value' => 'https://picsum.photos/seed/og-image/800/420'],
         ['setting_key' => 'seo_meta_title', 'setting_value' => 'AIRewardrop | Autonomous Agent Infrastructure for Crypto'],
         ['setting_key' => 'seo_meta_description', 'setting_value' => 'AIRewardrop builds, deploys, and maintains autonomous agents that deliver real-time market intelligence, on-chain automation, and community engagement.'],

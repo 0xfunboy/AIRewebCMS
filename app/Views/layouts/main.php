@@ -47,7 +47,7 @@ $publicPath = static function (string $path): string {
 
 $shareImage = $layoutSettings['seo_share_image'] ?? $layoutSettings['og_image'] ?? '';
 $shareImageUrl = $shareImage ? $assetUrl($shareImage) : '';
-$faviconPath = $publicPath($layoutSettings['favicon_path'] ?? '/favicon.svg');
+$faviconPath = $publicPath($layoutSettings['favicon_path'] ?? '/favicon.ico');
 $currentUrl = $assetUrl($_SERVER['REQUEST_URI'] ?? '/');
 $siteLogoPath = $publicPath($layoutSettings['site_logo'] ?? '');
 

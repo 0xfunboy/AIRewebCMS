@@ -26,9 +26,20 @@ AIRewebCMS/
 
 ## Requirements
 - PHP 8.1 or newer with PDO MySQL extension
-- MySQL 8.0 (or compatible)
+- MySQL 8.0 (or compatible) database
 - OpenSSL extension (for random bytes) and GMP extension (for signature verification)
+- Imagick **or** GD (with WebP support) for media optimisation
 - Web server capable of serving `public/` as document root (Apache/Nginx) or PHP built-in server for local use
+
+## Configuration (`.env.php`)
+Duplicate `.env.example.php` and tailor the following keys:
+
+| Section | Key | Notes |
+| --- | --- | --- |
+| `app` | `name`, `url`, `timezone`, `key`, `session_name` | `key` must be a 64‑char base64 string (`php -r "echo base64_encode(random_bytes(32));"`). |
+| `database` | `host`, `port`, `database`, `username`, `password`, `charset`, `collation`, `socket` | Provide credentials for a blank MySQL schema. |
+| `wallet` | `allowed_addresses`, `project_id`, `rpc_url` | Addresses authorised for admin login and WalletConnect project details. |
+| `mail` | SMTP parameters | Optional, used for outbound mail. |
 
 ## Installation
 1. **Clone or copy** this directory to your server.
@@ -53,11 +64,11 @@ AIRewebCMS/
    ```bash
    mysql -u aire_user -p aireweb < database/schema.sql
    ```
-5. *(Opzionale)* Se vuoi usare i vecchi seed TypeScript, puoi lanciare: `php scripts/import.php`.
-6. **Esegui il wizard di installazione** (solo la prima volta):
-   - Carica il progetto sul server.
-   - Visita `https://tuodominio/install.php` e clicca “Avvia installazione”. Lo script crea le tabelle e importa i seed.
-   - Alla fine elimina o rinomina `public/install.php` per sicurezza.
+5. (Facoltativo) per importare i seed legacy TypeScript esegui: `php scripts/import.php`.
+6. **Wizard di installazione (una sola volta)**
+   - Carica il progetto sul server e assicurati che `public/` sia la document root.
+   - Visita `https://tuodominio/install.php` e clicca “Avvia installazione”. Lo script crea tutte le tabelle, importa i seed (`database/seed-data.php`) e scrive `storage/install.lock`.
+   - Al termine elimina o rinomina `public/install.php` e, se desideri reinstallare, rimuovi `storage/install.lock`.
 
 7. **Serve the site**:
    - Local testing: `php -S 127.0.0.1:8000 -t public public/router.php`
@@ -86,8 +97,9 @@ Authenticated admins see a toolbar on every public page:
 
 ### Admin Media Library & Upload Fields
 - Every dashboard form that accepts logos, avatars, hero images, or social graphics now includes a **media field** with live previews, manual URL entry, and optional file upload.
-- Uploaded assets are stored beneath `public/media/YYYY/MM/<slug>-<hash>.<ext>` via `App\Support\Uploads`. SVGs are converted into transparent PNGs when ImageMagick is available, and every path is returned with a leading `/` so you can drop it straight into inline editing or templates.
+- Uploaded assets are stored beneath `public/media/YYYY/MM/<slug>-<hash>.<ext>` via `App\Support\Uploads`. SVGs are sanitised and converted into transparent PNGs when ImageMagick is available, and every path is returned with a leading `/` so you can drop it straight into inline editing or templates.
 - From **Admin → Media Library** trigger `Local Mirror Images` to download any remote assets referenced across settings or content tables, then `Optimize to WebP` to convert the local library while tracking progress. The optimizer uses Imagick when available and falls back to GD (with WebP support) otherwise.
+- The default favicon lives at `public/favicon.ico` (referenced via the `settings.favicon_path` key). Replace it in Media Library or by dropping a new ICO file into `public/`.
 - Visit **Dashboard → Media Library** to browse all uploaded files, open them in a new tab, or copy absolute URLs to your clipboard.
 
 ## Usage
