@@ -10,7 +10,7 @@ final class Uploads
     private const BASE_DIR = 'media';
 
     /**
-     * @return array{path:string,width:?int,height:?int}
+     * @return array{path:string,width:?int,height:?int,variants:array<string,array{path:string,width:int,height:int}>}
      */
     public static function store(array $file, string $nameHint): array
     {
@@ -34,7 +34,7 @@ final class Uploads
     /**
      * Store a file already present on disk (e.g. downloaded remotely).
      *
-     * @return array{path:string,width:?int,height:?int}
+     * @return array{path:string,width:?int,height:?int,variants:array<string,array{path:string,width:int,height:int}>}
      */
     public static function storeFromPath(string $path, string $originalName, string $nameHint): array
     {
@@ -101,6 +101,7 @@ final class Uploads
 
         $dimensions = [null, null];
         $sanitizedSvg = null;
+        $variants = [];
         if ($ext !== 'svg') {
             $info = @getimagesize($sourcePath);
             if (!$info) {
@@ -143,12 +144,9 @@ final class Uploads
                 throw new \RuntimeException('Unable to write sanitized SVG.');
             }
 
-            $converted = self::convertSvgToPng($sanitizedSvg, $slug, $hash, $basePath);
-            if ($converted !== null) {
-                @unlink($target);
-                $filename = $converted['filename'];
-                $target = $basePath . '/' . $filename;
-                $dimensions = [$converted['width'], $converted['height']];
+            $variants = self::createSvgVariants($sanitizedSvg, $slug, $hash, $basePath, $relativeDir);
+            if (isset($variants['png'])) {
+                $dimensions = [$variants['png']['width'], $variants['png']['height']];
             }
         }
 
@@ -156,6 +154,7 @@ final class Uploads
             'path' => $relativeDir . '/' . $filename,
             'width' => $dimensions[0],
             'height' => $dimensions[1],
+            'variants' => $variants,
         ];
     }
 
@@ -203,6 +202,7 @@ final class Uploads
         ];
 
         self::sanitizeSvgNode($doc->documentElement, $allowedElements, $attributeAllowlist);
+        self::enforceSvgNamespaces($doc->documentElement);
 
         return $doc->saveXML($doc->documentElement) ?: '';
     }
@@ -222,6 +222,16 @@ final class Uploads
             } elseif ($child instanceof \DOMComment) {
                 $child->parentNode?->removeChild($child);
             }
+        }
+    }
+
+    private static function enforceSvgNamespaces(\DOMElement $element): void
+    {
+        if (!$element->hasAttribute('xmlns')) {
+            $element->setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        }
+        if (!$element->hasAttribute('xmlns:xlink')) {
+            $element->setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
         }
     }
 
@@ -285,12 +295,19 @@ final class Uploads
     }
 
     /**
-     * @return array{filename:string,width:int,height:int}|null
+     * @return array<string, array{path:string,width:int,height:int}>
      */
-    private static function convertSvgToPng(string $svgContent, string $slug, string $hash, string $basePath): ?array
-    {
+    private static function createSvgVariants(
+        string $svgContent,
+        string $slug,
+        string $hash,
+        string $basePath,
+        string $relativeDir
+    ): array {
+        $variants = [];
+
         if (!class_exists(\Imagick::class)) {
-            return null;
+            return $variants;
         }
 
         $imagick = new \Imagick();
@@ -298,25 +315,52 @@ final class Uploads
             $imagick->setBackgroundColor('transparent');
             $imagick->setResolution(300, 300);
             $imagick->readImageBlob($svgContent);
-            $imagick->setImageFormat('png32');
 
-            $pngFilename = sprintf('%s-%s.png', $slug, $hash);
-            $pngPath = $basePath . '/' . $pngFilename;
-            if (!$imagick->writeImage($pngPath)) {
-                return null;
+            $pngClone = clone $imagick;
+            try {
+                $pngClone->setImageFormat('png32');
+                $pngFilename = sprintf('%s-%s.png', $slug, $hash);
+                $pngPath = $basePath . '/' . $pngFilename;
+                if ($pngClone->writeImage($pngPath)) {
+                    $variants['png'] = [
+                        'path' => $relativeDir . '/' . $pngFilename,
+                        'width' => (int)$pngClone->getImageWidth(),
+                        'height' => (int)$pngClone->getImageHeight(),
+                    ];
+                }
+            } finally {
+                $pngClone->clear();
+                $pngClone->destroy();
             }
 
-            return [
-                'filename' => $pngFilename,
-                'width' => $imagick->getImageWidth(),
-                'height' => $imagick->getImageHeight(),
-            ];
+            $webpClone = clone $imagick;
+            try {
+                $webpClone->setImageFormat('webp');
+                $webpClone->setOption('webp:lossless', 'true');
+                $webpFilename = sprintf('%s-%s.webp', $slug, $hash);
+                $webpPath = $basePath . '/' . $webpFilename;
+                if ($webpClone->writeImage($webpPath)) {
+                    $variants['webp'] = [
+                        'path' => $relativeDir . '/' . $webpFilename,
+                        'width' => (int)$webpClone->getImageWidth(),
+                        'height' => (int)$webpClone->getImageHeight(),
+                    ];
+                }
+            } finally {
+                $webpClone->clear();
+                $webpClone->destroy();
+            }
         } catch (\Throwable) {
-            return null;
+            foreach ($variants as $variant) {
+                @unlink($basePath . '/' . basename($variant['path']));
+            }
+            return [];
         } finally {
             $imagick->clear();
             $imagick->destroy();
         }
+
+        return $variants;
     }
 
     private static function detectExtensionFromMime(string $path): string

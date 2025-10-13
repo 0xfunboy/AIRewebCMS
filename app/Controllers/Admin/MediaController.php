@@ -9,6 +9,7 @@ use App\Core\Response;
 use App\Services\Admin\MediaOptimizer;
 use App\Services\Security\Csrf;
 use App\Support\Flash;
+use App\Support\Media;
 use App\Support\Uploads;
 
 final class MediaController extends Controller
@@ -60,7 +61,8 @@ final class MediaController extends Controller
             );
             $this->respond($report, true, $message);
         } catch (\Throwable $e) {
-            $this->respond(['error' => $e->getMessage()], false, 'Image optimization failed.', 500);
+            $errorMessage = $e->getMessage() ?: 'Image optimization failed.';
+            $this->respond(['error' => $errorMessage], false, $errorMessage, 500);
         }
     }
 
@@ -76,11 +78,20 @@ final class MediaController extends Controller
 
         try {
             $stored = Uploads::store($_FILES['file'], $label !== '' ? $label : 'media');
-            $path = '/' . ltrim($stored['path'], '/');
+            $path = Media::normalizeMediaPath($stored['path']);
+            $variants = [];
+            foreach ($stored['variants'] as $format => $variant) {
+                $variants[$format] = [
+                    'path' => Media::normalizeMediaPath($variant['path']),
+                    'width' => $variant['width'],
+                    'height' => $variant['height'],
+                ];
+            }
             $payload = [
                 'path' => $path,
                 'width' => $stored['width'],
                 'height' => $stored['height'],
+                'variants' => $variants,
                 'steps' => [[
                     'phase' => 0,
                     'current' => 1,
@@ -97,7 +108,14 @@ final class MediaController extends Controller
     }
 
     /**
-     * @return array<int, array{path:string,url:string,size:int,modified:int,type:string}>
+     * @return array<int, array{
+     *     path:string,
+     *     url:string,
+     *     size:int,
+     *     modified:int,
+     *     type:string,
+     *     variants:array<string,array{path:string,url:string,size:int,modified:int}>
+     * }>
      */
     private function gatherMedia(): array
     {
@@ -107,14 +125,48 @@ final class MediaController extends Controller
         }
 
         $files = [];
-        $this->scanMediaDirectory($root, $files, strlen(realpath(dirname(__DIR__, 2) . '/public')) + 1);
+        $publicRoot = realpath(dirname(__DIR__, 2) . '/public');
+        $this->scanMediaDirectory($root, $files, $publicRoot !== false ? strlen($publicRoot) + 1 : 0);
+
+        $grouped = [];
+        foreach ($files as $file) {
+            $groupKey = $file['group'] ?? $file['path'];
+            $grouped[$groupKey][] = $file;
+        }
+
+        $result = [];
+        foreach ($grouped as $groupKey => $items) {
+            $primaryIndex = $this->selectPrimaryMediaIndex($items);
+            $primary = $items[$primaryIndex];
+
+            $variants = [];
+            $latestModified = $primary['modified'];
+
+            foreach ($items as $index => $item) {
+                $latestModified = max($latestModified, $item['modified']);
+                if ($index === $primaryIndex) {
+                    continue;
+                }
+                $variants[$item['type']] = [
+                    'path' => $item['path'],
+                    'url' => $item['url'],
+                    'size' => $item['size'],
+                    'modified' => $item['modified'],
+                ];
+            }
+
+            unset($primary['group']);
+            $primary['variants'] = $variants;
+            $primary['modified'] = $latestModified;
+            $result[] = $primary;
+        }
 
         usort(
-            $files,
+            $result,
             static fn(array $a, array $b) => $b['modified'] <=> $a['modified']
         );
 
-        return $files;
+        return $result;
     }
 
     private function scanMediaDirectory(string $dir, array &$files, int $rootLength): void
@@ -144,14 +196,55 @@ final class MediaController extends Controller
             $relativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
             $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
+            $groupPath = $relativePath;
+            $dotPos = strrpos($groupPath, '.');
+            if ($dotPos !== false) {
+                $groupPath = substr($groupPath, 0, $dotPos);
+            }
+
             $files[] = [
                 'path' => $relativePath,
                 'url' => '/' . $relativePath,
                 'size' => filesize($path) ?: 0,
                 'modified' => filemtime($path) ?: 0,
                 'type' => $extension,
+                'group' => $groupPath,
             ];
         }
+    }
+
+    /**
+     * @param array<int, array{type:string,modified:int}> $items
+     */
+    private function selectPrimaryMediaIndex(array $items): int
+    {
+        $priority = [
+            'svg' => 0,
+            'webp' => 1,
+            'png' => 2,
+            'jpg' => 3,
+            'jpeg' => 3,
+            'ico' => 4,
+        ];
+
+        $bestIndex = 0;
+        $bestScore = PHP_INT_MAX;
+
+        foreach ($items as $index => $item) {
+            $type = $item['type'] ?? '';
+            $score = $priority[$type] ?? 10;
+            if ($score < $bestScore) {
+                $bestScore = $score;
+                $bestIndex = $index;
+                continue;
+            }
+
+            if ($score === $bestScore && $item['modified'] > ($items[$bestIndex]['modified'] ?? 0)) {
+                $bestIndex = $index;
+            }
+        }
+
+        return $bestIndex;
     }
 
     private function assertValidCsrf(?string $token): void

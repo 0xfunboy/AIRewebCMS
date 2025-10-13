@@ -7,6 +7,7 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Services\Security\Csrf;
 use App\Support\Flash;
+use App\Support\Media;
 use App\Support\Uploads;
 use PDO;
 
@@ -93,12 +94,12 @@ final class SettingsController extends Controller
 
         if (isset($_FILES['site_logo']) && is_array($_FILES['site_logo']) && $this->hasFileUpload($_FILES['site_logo'])) {
             $stored = Uploads::store($_FILES['site_logo'], 'site-logo');
-            $updates['site_logo'] = '/' . ltrim($stored['path'], '/');
+            $updates['site_logo'] = Media::normalizeMediaPath($stored['path']);
         }
 
         if (isset($_FILES['favicon']) && is_array($_FILES['favicon']) && $this->hasFileUpload($_FILES['favicon'])) {
             $stored = Uploads::store($_FILES['favicon'], 'favicon');
-            $updates['favicon_path'] = '/' . ltrim($stored['path'], '/');
+            $updates['favicon_path'] = Media::normalizeMediaPath($stored['path']);
         }
 
         if (empty($updates)) {
@@ -123,7 +124,7 @@ final class SettingsController extends Controller
 
         if (isset($_FILES['seo_share_image']) && is_array($_FILES['seo_share_image']) && $this->hasFileUpload($_FILES['seo_share_image'])) {
             $stored = Uploads::store($_FILES['seo_share_image'], 'seo-share-image');
-            $path = '/' . ltrim($stored['path'], '/');
+            $path = Media::normalizeMediaPath($stored['path']);
             $payload['seo_share_image'] = $path;
             $payload['og_image'] = $path;
         }

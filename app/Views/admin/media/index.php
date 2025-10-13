@@ -11,6 +11,7 @@ View::renderPartial('layouts/admin', [
     'contentData' => [
         'media' => $media,
         'csrfToken' => $csrfToken,
+        'notice' => $notice ?? null,
+        'error' => $error ?? null,
     ],
 ]);
-

@@ -220,6 +220,12 @@ body.admin-mode-active .admin-editing-outline {
     font-size: 14px;
 }
 
+.admin-modal__message {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #a8acc6;
+}
+
 .admin-modal__actions {
     display: flex;
     justify-content: flex-end;

@@ -377,6 +377,7 @@ function ensureImageElement(element, wrapper) {
 }
 
 let htmlModal = null;
+let logoutModal = null;
 
 function openHtmlModal(el) {
     if (htmlModal) return;
@@ -435,6 +436,64 @@ function closeHtmlModal() {
     htmlModal = null;
 }
 
+function openLogoutModal(form) {
+    if (logoutModal) return;
+    const modal = document.createElement('div');
+    modal.className = 'admin-modal';
+
+    const content = document.createElement('div');
+    content.className = 'admin-modal__content';
+
+    const message = document.createElement('p');
+    message.className = 'admin-modal__message';
+    message.textContent = 'Save changes and return to user mode?';
+    content.appendChild(message);
+
+    const actions = document.createElement('div');
+    actions.className = 'admin-modal__actions';
+
+    const stayButton = document.createElement('button');
+    stayButton.type = 'button';
+    stayButton.className = 'admin-modal__button cancel';
+    stayButton.textContent = 'Stay';
+    stayButton.addEventListener('click', () => closeLogoutModal());
+
+    const confirmButton = document.createElement('button');
+    confirmButton.type = 'button';
+    confirmButton.className = 'admin-modal__button save';
+    confirmButton.textContent = 'Save & Logout';
+    confirmButton.addEventListener('click', async () => {
+        confirmButton.disabled = true;
+        try {
+            if (state.enabled) {
+                const data = await request(endpoints.toggle, {
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: false, csrf: getCsrf() }),
+                });
+                state.enabled = Boolean(data.enabled);
+                deactivateAdminMode();
+            }
+            closeLogoutModal();
+            form.submit();
+        } catch (error) {
+            confirmButton.disabled = false;
+            showToast(error.message, 'error');
+        }
+    });
+
+    actions.append(stayButton, confirmButton);
+    content.appendChild(actions);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    logoutModal = modal;
+}
+
+function closeLogoutModal() {
+    if (!logoutModal) return;
+    logoutModal.remove();
+    logoutModal = null;
+}
+
 async function onToggleClick() {
     try {
         const desired = !state.enabled;
@@ -470,28 +529,12 @@ function initToolbar() {
 }
 
 async function onLogoutSubmit(event) {
-    const confirmExit = window.confirm('Vuoi salvare le modifiche e tornare alla modalità utente?');
-    if (!confirmExit) {
-        event.preventDefault();
-        return;
-    }
-
-    if (!state.enabled) {
-        return;
-    }
-
     event.preventDefault();
-    try {
-        const data = await request(endpoints.toggle, {
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ enabled: false, csrf: getCsrf() }),
-        });
-        state.enabled = Boolean(data.enabled);
-        deactivateAdminMode();
-        event.target.submit();
-    } catch (error) {
-        showToast(error.message, 'error');
+    const form = event.currentTarget;
+    if (!(form instanceof HTMLFormElement)) {
+        return;
     }
+    openLogoutModal(form);
 }
 
 function toggleButtons(el, visibilityMap) {
@@ -510,7 +553,183 @@ function toggleButtons(el, visibilityMap) {
     });
 }
 
+async function copyToClipboard(text) {
+    if (!text) {
+        return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+}
+
+function handleCopyClick(event) {
+    const trigger = event.target.closest('[data-copy-url]');
+    if (!trigger) {
+        return;
+    }
+    const value = trigger.getAttribute('data-copy-url');
+    if (!value) {
+        return;
+    }
+    event.preventDefault();
+    copyToClipboard(value)
+        .then(() => {
+            trigger.classList.add('copied');
+            showToast('URL copied');
+            window.setTimeout(() => trigger.classList.remove('copied'), 1200);
+        })
+        .catch(() => {
+            showToast('Copy failed', 'error');
+        });
+}
+
+function initMediaLibrary() {
+    const tools = qs('[data-media-tools]');
+    if (!tools) {
+        return;
+    }
+
+    const statusBox = qs('[data-media-status]');
+    const summaryEl = qs('[data-media-summary]');
+    const logList = qs('[data-media-log]');
+
+    const renderSummary = (text) => {
+        if (summaryEl) {
+            summaryEl.textContent = text;
+        }
+        if (statusBox) {
+            statusBox.classList.remove('hidden');
+        }
+    };
+
+    const renderSteps = (steps) => {
+        if (!logList) {
+            return;
+        }
+        logList.innerHTML = '';
+        if (!steps || steps.length === 0) {
+            const emptyItem = document.createElement('li');
+            emptyItem.textContent = 'Ready.';
+            logList.appendChild(emptyItem);
+            return;
+        }
+
+        steps.forEach((step) => {
+            const item = document.createElement('li');
+            item.textContent = step.message || 'Step completed';
+            if (step.status === 'error') {
+                item.classList.add('media-optimize-status__item--error');
+            } else if (step.status === 'skip') {
+                item.classList.add('media-optimize-status__item--skip');
+            }
+            logList.appendChild(item);
+        });
+    };
+
+    const setFormDisabled = (form, disabled) => {
+        Array.from(form.elements).forEach((element) => {
+            if ('disabled' in element) {
+                element.disabled = disabled;
+            }
+        });
+    };
+
+    const applyFilter = (type) => {
+        const normalized = (type || 'all').toLowerCase();
+        qsa('[data-media-card]').forEach((card) => {
+            const primary = (card.dataset.mediaType || '').toLowerCase();
+            const variants = (card.dataset.mediaVariants || '')
+                .toLowerCase()
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean);
+            const matches = normalized === 'all' || primary === normalized || variants.includes(normalized);
+            card.classList.toggle('hidden', !matches);
+        });
+    };
+
+    const filterButtons = qsa('[data-media-filter]');
+    if (filterButtons.length) {
+        filterButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                filterButtons.forEach((other) => other.classList.remove('media-filter-active'));
+                button.classList.add('media-filter-active');
+                applyFilter(button.dataset.mediaFilter || 'all');
+            });
+        });
+        applyFilter('all');
+    }
+
+    document.addEventListener('click', handleCopyClick);
+
+    tools.addEventListener('submit', async (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) {
+            return;
+        }
+        const action = form.dataset.mediaAction;
+        if (!action) {
+            return;
+        }
+
+        event.preventDefault();
+        renderSummary('Processing…');
+        renderSteps([]);
+        setFormDisabled(form, true);
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    Accept: 'application/json',
+                },
+            });
+
+            let data = {};
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                data = { ok: false, error: 'Unexpected response from server.' };
+            }
+
+            if (!response.ok || !data.ok) {
+                throw new Error(data.error || 'Operation failed.');
+            }
+
+            renderSummary(data.message || 'Completed.');
+            renderSteps(Array.isArray(data.steps) ? data.steps : []);
+            showToast(data.message || 'Completed');
+
+            if (action === 'upload') {
+                form.reset();
+                if (data.path) {
+                    renderSummary(`${data.message || 'Uploaded.'} Refresh the page to see the new file.`);
+                }
+            }
+        } catch (error) {
+            renderSummary(error.message || 'Operation failed.');
+            renderSteps([]);
+            showToast(error.message || 'Operation failed.', 'error');
+        } finally {
+            setFormDisabled(form, false);
+        }
+    });
+}
+
 initToolbar();
+initMediaLibrary();
 
 window.addEventListener('beforeunload', () => {
     if (state.enabled) {

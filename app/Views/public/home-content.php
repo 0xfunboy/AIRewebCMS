@@ -1,6 +1,7 @@
 <?php
 use App\Core\View;
 use App\Support\AdminMode;
+use App\Support\Media;
 
 /** @var array $settings */
 /** @var array $products */
@@ -10,7 +11,14 @@ use App\Support\AdminMode;
 $tagline = $settings['site_tagline'] ?? 'Autonomous Agent Infrastructure for Crypto';
 $heroTitle = $settings['hero_title_home'] ?? $tagline;
 $heroSubtitle = $settings['hero_subtitle_home'] ?? 'AIRewardrop designs, ships, and operates always-on agents across multiple chains - live charts, on-chain analytics, and tokenized dApps. We’re the builders behind AIR3 and the Agent Swarm.';
-$heroImage = $settings['hero_image_home'] ?? 'https://picsum.photos/seed/hero-agent/600/500';
+$heroImageSetting = trim((string)($settings['hero_image_home'] ?? ''));
+if ($heroImageSetting === '') {
+    $heroImage = Media::assetSvg('hero/hero-default.svg');
+} elseif (str_starts_with($heroImageSetting, 'http://') || str_starts_with($heroImageSetting, 'https://')) {
+    $heroImage = $heroImageSetting;
+} else {
+    $heroImage = Media::normalizeMediaPath($heroImageSetting);
+}
 $heroBadge = $settings['hero_badge_home'] ?? '#4 Most Credible Agent by Ethos Network (Q4 2025).';
 
 $productsList = array_values($products);

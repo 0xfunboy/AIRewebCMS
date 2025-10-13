@@ -5,6 +5,7 @@
 
 use App\Core\View;
 use App\Support\AdminMode;
+use App\Support\Media;
 use App\Services\Cms\ContentRepository;
 use App\Services\Security\Csrf;
 use App\Core\Container;
@@ -46,10 +47,26 @@ $publicPath = static function (string $path): string {
 };
 
 $shareImage = $layoutSettings['seo_share_image'] ?? $layoutSettings['og_image'] ?? '';
+if ($shareImage === '') {
+    $shareImage = Media::assetSvg('products/product1.svg');
+}
 $shareImageUrl = $shareImage ? $assetUrl($shareImage) : '';
 $faviconPath = $publicPath($layoutSettings['favicon_path'] ?? '/favicon.ico');
 $currentUrl = $assetUrl($_SERVER['REQUEST_URI'] ?? '/');
-$siteLogoPath = $publicPath($layoutSettings['site_logo'] ?? '');
+$siteLogoSetting = (string)($layoutSettings['site_logo'] ?? '');
+$siteLogoPath = '';
+if ($siteLogoSetting !== '') {
+    if (str_starts_with($siteLogoSetting, 'http://') || str_starts_with($siteLogoSetting, 'https://')) {
+        $siteLogoPath = $siteLogoSetting;
+    } else {
+        $absoluteLogo = dirname(__DIR__, 2) . '/public/' . ltrim($siteLogoSetting, '/');
+        $siteLogoPath = is_file($absoluteLogo)
+            ? $publicPath($siteLogoSetting)
+            : Media::assetSvg('logo/site-logo.svg');
+    }
+} else {
+    $siteLogoPath = Media::assetSvg('logo/site-logo.svg');
+}
 
 $isAdmin = AdminMode::isAdmin();
 $adminModeEnabled = AdminMode::isEnabled();

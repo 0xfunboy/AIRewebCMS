@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Services\Admin;
 
+use App\Support\Media;
 use App\Support\Uploads;
 use PDO;
 
@@ -311,7 +312,7 @@ final class MediaOptimizer
             @unlink($tmp);
         }
 
-        $newPath = '/' . ltrim($stored['path'], '/');
+        $newPath = Media::normalizeMediaPath($stored['path']);
         $this->updateReference($task, $newPath);
 
         return $newPath;

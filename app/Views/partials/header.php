@@ -30,9 +30,7 @@ $siteLogo = $siteLogo ?? '';
                 <div class="relative" data-dropdown>
                     <button type="button" data-dropdown-toggle class="flex items-center gap-1 text-txt hover:text-pri transition-colors">
                         More
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                        </svg>
+                        <?= icon_svg('chevron-down', 'h-4 w-4'); ?>
                     </button>
                     <div class="hidden absolute right-0 mt-3 w-52 rounded-lg border border-stroke bg-bg2 shadow-deep" data-dropdown-panel>
                         <a href="/clients" class="block px-4 py-2 text-sm text-txt hover:bg-stroke hover:text-pri transition">Clients</a>
@@ -50,9 +48,7 @@ $siteLogo = $siteLogo ?? '';
             </div>
             <div class="md:hidden">
                 <button type="button" class="text-txt" data-toggle-mobile-nav>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                    </svg>
+                    <?= icon_svg('menu', 'h-6 w-6'); ?>
                 </button>
             </div>
         </div>

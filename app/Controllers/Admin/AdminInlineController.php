@@ -9,8 +9,9 @@ use App\Core\Database;
 use App\Core\Response;
 use App\Services\Security\Csrf;
 use App\Support\AdminMode;
-use App\Support\Uploads;
 use App\Support\HtmlSanitizer;
+use App\Support\Media;
+use App\Support\Uploads;
 use PDO;
 
 final class AdminInlineController extends Controller
@@ -234,7 +235,7 @@ final class AdminInlineController extends Controller
 
         try {
             $stored = Uploads::store($_FILES['file'], ($model === 'settings' ? $key : (string)$idValue) . '-' . $key);
-            $storedPath = '/' . ltrim($stored['path'], '/');
+            $storedPath = Media::normalizeMediaPath($stored['path']);
             $oldValue = $this->performUpdate($model, $key, $storedPath, $idValue);
             $this->logChange($model, $key, $idValue, $oldValue, $storedPath);
         } catch (\Throwable $e) {
@@ -268,15 +269,7 @@ final class AdminInlineController extends Controller
 
     private function sanitizeImagePath(string $value): string
     {
-        if ($value === '') {
-            return '';
-        }
-
-        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
-            return $value;
-        }
-
-        return '/' . ltrim($value, '/');
+        return $value === '' ? '' : Media::normalizeMediaPath($value);
     }
 
     private function sanitizeHtml(string $value): string

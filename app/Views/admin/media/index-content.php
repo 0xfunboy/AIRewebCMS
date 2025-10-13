@@ -15,6 +15,22 @@ $formatSize = static function (int $bytes): string {
     }
     return round($bytes / (1024 * 1024), 2) . ' MB';
 };
+
+$availableTypes = [];
+foreach ($media as $item) {
+    $primaryType = $item['type'] ?? '';
+    if ($primaryType !== '') {
+        $availableTypes[$primaryType] = true;
+    }
+    $variantTypes = isset($item['variants']) && is_array($item['variants']) ? array_keys($item['variants']) : [];
+    foreach ($variantTypes as $variantType) {
+        if ($variantType !== '') {
+            $availableTypes[$variantType] = true;
+        }
+    }
+}
+$availableTypes = array_keys($availableTypes);
+sort($availableTypes);
 ?>
 
 <section class="space-y-6 max-w-6xl">
@@ -62,6 +78,17 @@ $formatSize = static function (int $bytes): string {
         </div>
     </div>
 
+    <?php if (!empty($availableTypes)): ?>
+        <div class="flex flex-wrap gap-2" data-media-filters>
+            <button type="button" class="media-filter-button media-filter-active" data-media-filter="all">All</button>
+            <?php foreach ($availableTypes as $type): ?>
+                <button type="button" class="media-filter-button" data-media-filter="<?= htmlspecialchars($type, ENT_QUOTES, 'UTF-8'); ?>">
+                    .<?= strtoupper(htmlspecialchars($type, ENT_QUOTES, 'UTF-8')); ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
 <?php if (!empty($notice)): ?>
     <div class="card border-emerald-500/40 bg-emerald-500/10 text-emerald-100 text-sm">
         <?= htmlspecialchars($notice, ENT_QUOTES, 'UTF-8'); ?>
@@ -87,8 +114,11 @@ $formatSize = static function (int $bytes): string {
                 $path = htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8');
                 $size = $formatSize($item['size']);
                 $modified = date('Y-m-d H:i', $item['modified']);
+                $typeAttr = htmlspecialchars($item['type'], ENT_QUOTES, 'UTF-8');
+                $variants = isset($item['variants']) && is_array($item['variants']) ? $item['variants'] : [];
+                $variantTypesAttr = htmlspecialchars(implode(',', array_keys($variants)), ENT_QUOTES, 'UTF-8');
                 ?>
-                <article class="card space-y-3" data-media-card>
+                <article class="card space-y-3" data-media-card data-media-type="<?= $typeAttr ?>" data-media-variants="<?= $variantTypesAttr ?>">
                     <div class="bg-bg2 border border-stroke rounded-lg overflow-hidden aspect-video flex items-center justify-center">
                         <?php if ($isImage): ?>
                             <img src="<?= $url ?>" alt="<?= $path ?>" class="max-h-full max-w-full object-contain">
@@ -100,6 +130,23 @@ $formatSize = static function (int $bytes): string {
                         <p class="text-sm font-semibold text-acc break-all"><?= $path ?></p>
                         <p class="text-xs text-muted"><?= $size ?> &middot; Updated <?= $modified ?></p>
                     </div>
+                    <?php if (!empty($variants)): ?>
+                        <div class="flex flex-wrap gap-2 text-xs" data-media-variant-list>
+                            <?php foreach ($variants as $variantType => $variant): ?>
+                                <?php
+                                $variantUrl = htmlspecialchars($variant['url'], ENT_QUOTES, 'UTF-8');
+                                $variantSize = $formatSize($variant['size']);
+                                $variantLabel = strtoupper(htmlspecialchars($variantType, ENT_QUOTES, 'UTF-8'));
+                                ?>
+                                <div class="media-variant-pill">
+                                    <span class="media-variant-label"><?= $variantLabel ?></span>
+                                    <span class="media-variant-size"><?= $variantSize ?></span>
+                                    <a href="<?= $variantUrl ?>" target="_blank" rel="noopener" class="media-variant-open">Open</a>
+                                    <button type="button" class="media-variant-copy" data-copy-url="<?= $variantUrl ?>">Copy</button>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                     <div class="flex items-center gap-3 text-sm">
                         <a href="<?= $url ?>" target="_blank" rel="noopener" class="text-cy hover:underline">Open</a>
                         <button type="button" class="text-muted hover:text-acc transition" data-copy-url="<?= $url ?>">

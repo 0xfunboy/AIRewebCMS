@@ -1,109 +1,67 @@
 <?php
 declare(strict_types=1);
 
+use App\Support\Media;
+
 if (!function_exists('icon_svg')) {
     /**
-     * Render an SVG icon by key (mirrors components/Icons.tsx from original React app).
+     * Render an SVG icon by key, loading the markup from the managed media store
+     * with a fallback to versioned defaults bundled with the application.
      */
     function icon_svg(string $name, string $class = ''): string
     {
-        static $icons = [
-            'logo' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="currentColor"',
-                'body' => '<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5-10-5-10 5zM2 12l10 5 10-5-10-5-10 5z" />',
-            ],
-            'twitter' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="currentColor"',
-                'body' => '<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />',
-            ],
-            'telegram' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="currentColor"',
-                'body' => '<path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm5.043 7.924c-.234-.94-.83-1.21-1.42.21L11.79 12.2l-3.26-1.026c-1.154-.384-1.153-1.144.24-1.523l8.693-2.9c.9-.3 1.623.192 1.348 1.487l-1.9 8.54c-.23 1.053-1.002 1.3-1.802.82l-3.514-2.58-1.7 1.64c-.19.19-.35.35-.69.35-.46 0-.62-.16-.69-.77l.25-2.22 5.02-4.52c.46-.43-.1-.68-.69-.26l-6.3 3.97-3.34-1.04c-1.02-.31-1.05-.98.24-1.42l1.33-.45z" />',
-            ],
-            'discord' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="currentColor"',
-                'body' => '<path d="M20.317 4.369A19.791 19.791 0 0016.556 3c-.215.39-.463.917-.636 1.333a18.626 18.626 0 00-3.848 0A12.64 12.64 0 0011.436 3a19.736 19.736 0 00-3.762 1.385c-2.381 3.49-3.025 6.892-2.701 10.24a19.903 19.903 0 003.996 2.02c.33-.452.624-.934.873-1.442a12.815 12.815 0 001.696.136c.6.021 1.2-.02 1.794-.123.253.5.546.98.872 1.432a19.758 19.758 0 004.003-2.03c.332-3.42-.396-6.79-2.79-10.249zm-9.024 8.442c-.785 0-1.426-.721-1.426-1.61 0-.89.63-1.61 1.426-1.61.806 0 1.437.72 1.426 1.61 0 .889-.63 1.61-1.426 1.61zm5.418 0c-.785 0-1.426-.721-1.426-1.61 0-.89.63-1.61 1.426-1.61.806 0 1.437.72 1.426 1.61 0 .889-.62 1.61-1.426 1.61z" />',
-            ],
-            'youtube' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="currentColor"',
-                'body' => '<path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />',
-            ],
-            'twitch' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="currentColor"',
-                'body' => '<path d="M2.373 0l-2.373 2.373v16.85h5.339v4.774h3.183l4.773-4.774h4.137l6.941-6.941v-12.282h-22.003zm18.355 11.007l-3.818 3.818h-4.773l-3.818 3.818v-3.818h-4.46v-12.28h16.87v8.464zm-4.773-6.28v5.34h-2.386v-5.34h2.386zm-4.773 0v5.34h-2.386v-5.34h2.386z" />',
-            ],
-            'tiktok' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="currentColor"',
-                'body' => '<path d="M12.525.02c1.31-.02 2.61-.01 3.91.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-2.43.05-4.85-.38-6.75-1.77-2.06-1.52-3.06-3.9-3.06-6.38 0-4.32 2.57-8.05 6.46-9.66.45-.19.92-.38 1.41-.51.02-3.36.01-6.72-.02-10.08zM7.25 15.55c.01.2.02.4.03.6.08 1.67.63 3.29 1.74 4.45 1.12 1.14 2.7 1.68 4.27 1.73v-4.04c-.99-.06-1.97-.34-2.82-.89-.48-.31-.92-.68-1.33-1.11-.01-2.52-.01-5.04.02-7.56.03-1.15.39-2.28.98-3.23.51-.81 1.2-1.46 2.04-1.92v-3.96c-.92.1-1.84.34-2.7.72-.57.25-1.1.57-1.6.93-.02 2.67-.01 5.34.02 8.01z" />',
-            ],
-            'instagram' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="currentColor"',
-                'body' => '<path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.012 3.584-.07 4.85c-.148 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.584-.012-4.85-.07c-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.012-3.584.07-4.85c.148-3.225 1.664-4.771 4.919-4.919 1.266-.058 1.644-.07 4.85-.07zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.667.072 4.947c.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.358-.2 6.78-2.618 6.98-6.98.059-1.281.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.2-4.358-2.618-6.78-6.98-6.98-1.281-.058-1.689-.072-4.948-.072zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.441 1.441 1.441 1.441-.645 1.441-1.441-.645-1.44-1.441-1.44z" />',
-            ],
-            'chip' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="none" stroke="currentColor" stroke-width="1.5"',
-                'body' => '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5M19.5 8.25h-1.5m-15 3.75h-1.5m15 0h-1.5m-15 3.75h-1.5m15 0h-1.5M12 19.5V21m3.75-1.5v1.5M12 4.5a7.5 7.5 0 00-7.5 7.5h15a7.5 7.5 0 00-7.5-7.5z" />',
-            ],
-            'cube' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="none" stroke="currentColor" stroke-width="1.5"',
-                'body' => '<path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9.75l-9-5.25m9 5.25V21" />',
-            ],
-            'device-phone' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="none" stroke="currentColor" stroke-width="1.5"',
-                'body' => '<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18h3" />',
-            ],
-            'paper-airplane' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="none" stroke="currentColor" stroke-width="1.5"',
-                'body' => '<path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />',
-            ],
-            'beaker' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="none" stroke="currentColor" stroke-width="1.5"',
-                'body' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591l3.5 3.5m-4.159-9.182c.251-.023.501-.05.75-.082m-4.5 0c.375 0 .75.012 1.125.037m3.375 0c.375-.025.75-.037 1.125-.037m-4.5 0c.375 0 .75.012 1.125.037M12 19.5V21m3.75-18v1.5M19.5 8.25h-1.5M8.25 3.75h7.5m-3.75 15h.008v.008H12v-.008z" />',
-            ],
-            'sparkles' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="none" stroke="currentColor" stroke-width="1.5"',
-                'body' => '<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5l1.72 3.48 3.84.56-2.78 2.71.66 3.84-3.44-1.81-3.44 1.81.66-3.84-2.78-2.71 3.84-.56L10.5 4.5l1.72 3.48L13.5 4.5zm-6 15l.96 1.95 2.16.31-1.56 1.52.37 2.16-1.93-1.01-1.93 1.01.37-2.16-1.56-1.52 2.16-.31.96-1.95zm12-3l.96 1.95 2.16.31-1.56 1.52.37 2.16-1.93-1.01-1.93 1.01.37-2.16-1.56-1.52 2.16-.31.96-1.95z" />',
-            ],
-            'storefront' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="none" stroke="currentColor" stroke-width="1.5"',
-                'body' => '<path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5l1.5 12.75A1.5 1.5 0 006 21.75h12a1.5 1.5 0 001.5-1.5L21 7.5M2.25 6h19.5M7.5 6v-.75A3.75 3.75 0 0111.25 1.5h1.5A3.75 3.75 0 0116.5 5.25V6" />',
-            ],
-            'wallet' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="none" stroke="currentColor" stroke-width="1.5"',
-                'body' => '<path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5A2.25 2.25 0 015.25 5.25h13.5A2.25 2.25 0 0121 7.5v9a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 16.5v-9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 12a.75.75 0 111.5 0 .75.75 0 01-1.5 0z" />',
-            ],
-            'check-circle' => [
-                'viewBox' => '0 0 24 24',
-                'attrs' => 'fill="none" stroke="currentColor" stroke-width="1.5"',
-                'body' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />',
-            ],
+        $safeName = strtolower(trim(str_replace('..', '', $name)));
+        if ($safeName === '') {
+            $safeName = 'logo';
+        }
+
+        static $map = [
+            'logo' => 'logo/site-logo.svg',
+            'twitter' => 'social/twitter.svg',
+            'telegram' => 'social/telegram.svg',
+            'discord' => 'social/discord.svg',
+            'youtube' => 'social/youtube.svg',
+            'twitch' => 'social/twitch.svg',
+            'tiktok' => 'social/tiktok.svg',
+            'instagram' => 'social/instagram.svg',
+            'chevron-down' => 'ui/chevron-down.svg',
+            'menu' => 'ui/menu.svg',
+            'check' => 'ui/check.svg',
+            'chip' => 'ui/chip.svg',
+            'cube' => 'ui/cube.svg',
+            'device-phone' => 'ui/device-phone.svg',
+            'paper-airplane' => 'ui/paper-airplane.svg',
+            'beaker' => 'ui/beaker.svg',
+            'sparkles' => 'ui/sparkles.svg',
+            'storefront' => 'ui/storefront.svg',
+            'wallet' => 'ui/wallet.svg',
+            'check-circle' => 'ui/check-circle.svg',
         ];
 
-        $icon = $icons[$name] ?? $icons['logo'];
-        $classAttr = $class !== '' ? ' class="' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . '"' : '';
+        $relativePath = $map[$safeName] ?? ('ui/' . $safeName . '.svg');
 
-        return sprintf(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="%s" %s%s>%s</svg>',
-            $icon['viewBox'],
-            $icon['attrs'],
-            $classAttr,
-            $icon['body']
-        );
+        $path = Media::resolveSvgPath($relativePath);
+        if ($path === null) {
+            $path = Media::resolveSvgPath('placeholder.svg');
+            if ($path === null) {
+                return '';
+            }
+        }
+
+        $svg = file_get_contents($path) ?: '';
+        if ($svg === '') {
+            return '';
+        }
+
+        if ($class !== '') {
+            $classAttr = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
+            if (preg_match('/<svg\b[^>]*class="([^"]*)"/i', $svg)) {
+                $svg = preg_replace('/(<svg\b[^>]*class=")([^"]*)"/i', '$1$2 ' . $classAttr . '"', $svg, 1);
+            } else {
+                $svg = preg_replace('/<svg\b([^>]*)>/i', '<svg$1 class="' . $classAttr . '">', $svg, 1);
+            }
+        }
+
+        return $svg;
     }
 }

@@ -5,7 +5,7 @@ A lightweight PHP + MySQL CMS powering the AIRewardrop agent website. The system
 ## Features
 - **Wallet-based admin login** using WalletConnect v2 with nonce validation and session tracking.
 - **Modular admin dashboard** covering Products, Agents, Partners, Team, Blog Posts, Social Proof, Roadmap (phases + tracks), and global Settings.
-- **Media library explorer & optimizer** with previews, quick URL copy actions, plus dedicated actions to mirror external assets locally and convert the entire library to WebP under `public/media/`.
+- **Media library explorer & optimizer** with filters, progress logging, clipboard copy, and awareness of SVG→PNG/WebP variants alongside tools to mirror remote assets and batch-convert the library inside `public/media/`.
 - **Public site pages** rendered through PHP templates that mirror the original Tailwind-styled marketing content.
 - **Installer seeding**: the setup wizard (`public/install.php`) runs the schema and populates starter content from `database/seed-data.php` one time.
 - **MySQL migrations** in `database/schema.sql` aligned with the CMS features (admins, sessions, content tables, etc.).
@@ -48,9 +48,10 @@ Duplicate `.env.example.php` and tailor the following keys:
    cp .env.example.php .env.php
    ```
    Edit the new file with your production database credentials, WalletConnect settings, and app metadata.
-3. **Set writable permissions** on the storage directories:
+3. **Set writable permissions** on the storage and media directories:
    ```bash
    chmod -R 775 storage
+   chmod -R 755 public/media public/media/svg
    ```
    (Adjust owners/groups to match your web server user.)
 4. **Create the database (and user, if needed)** and run the schema migrations. Example MySQL session:
@@ -81,14 +82,14 @@ Authenticated admins see a toolbar on every public page:
 2. **Editable elements** – when active, blocks marked with `data-model`, `data-key`, and optional `data-id` expose action buttons:
    - **Edit / Save / Cancel** for plain text.
    - **Edit HTML** opens a modal editor for rich text.
-   - **Replace** triggers the secure upload flow for images (png, jpg, jpeg, webp, svg, ico – 5 MB max) saved under `public/media/YYYY/MM/`. SVG uploads are sanitised and rasterised to PNG automatically.
+   - **Replace** triggers the secure upload flow for images (png, jpg, jpeg, webp, svg, ico – 5 MB max) saved under `public/media/YYYY/MM/`. SVG uploads are sanitised, the original vector is preserved, and transparent PNG/WebP variants are generated when Imagick is available.
 3. **API behind the scenes**
    - `POST /admin/api/update-field` with JSON payload `{ model, key, id?, value, csrf }`.
    - `POST /admin/api/upload-image` accepts multipart data with the same metadata.
    - Responses always include an updated CSRF token. Every change is logged in the `audit_log` table with the admin wallet address.
 4. **Admin toolbar updates**
-   - The toolbar now sits above the site header, keeping page content offset automatically on desktop and mobile.
-   - A dedicated “Dashboard” shortcut replaces the previous preview link. “Logout” prompts to confirm exiting admin mode before redirecting to `/auth/logout`.
+   - The toolbar sits above the site header with automatic offset on desktop and mobile.
+   - A dedicated “Dashboard” shortcut replaces the previous preview link. “Logout” opens a confirmation modal that disables Admin Mode before redirecting to `/auth/logout`.
 
 5. **Extending inline editing**
    - Wrap new fields with `<?= \App\Support\AdminMode::dataAttrs('model', 'field', $id); ?>`.
@@ -96,11 +97,13 @@ Authenticated admins see a toolbar on every public page:
    - Admin assets are loaded only when the user is authenticated, so regular visitors see the original markup untouched.
 
 ### Admin Media Library & Upload Fields
-- Every dashboard form that accepts logos, avatars, hero images, or social graphics now includes a **media field** with live previews, manual URL entry, and optional file upload.
-- Uploaded assets are stored beneath `public/media/YYYY/MM/<slug>-<hash>.<ext>` via `App\Support\Uploads`. SVGs are sanitised and converted into transparent PNGs when ImageMagick is available, and every path is returned with a leading `/` so you can drop it straight into inline editing or templates.
-- From **Admin → Media Library** trigger `Local Mirror Images` to download any remote assets referenced across settings or content tables, then `Optimize to WebP` to convert the local library while tracking progress. The optimizer uses Imagick when available and falls back to GD (with WebP support) otherwise.
-- The default favicon lives at `public/favicon.ico` (referenced via the `settings.favicon_path` key). Replace it in Media Library or by dropping a new ICO file into `public/`.
-- Visit **Dashboard → Media Library** to browse all uploaded files, open them in a new tab, or copy absolute URLs to your clipboard.
+- Every dashboard form that accepts logos, avatars, hero images, or social graphics uses a **media field** with live previews, manual URL entry, and optional file upload. Paths are normalised to begin with `/media/…` so they can be pasted directly into templates or inline editing.
+- The upload pipeline lives in `App\Support\Uploads`: all files are MIME sniffed, SVGs are sanitised, the original vector is retained, and PNG/WebP variants are produced whenever Imagick is available (otherwise the upload still succeeds without raster copies).
+- The Media Library grid now includes extension filters, variant pills (e.g. SVG + PNG/WebP), instant clipboard copy, and a streaming log under the action buttons. `Local Mirror Images` imports any remote URLs referenced in settings/content, while `Optimize to WebP` reports clear errors if Imagick/GD is unavailable so admins know the conversion was skipped.
+- Default UI/brand assets ship with the repo under `public/media/svg/**` (editable) with version-controlled fallbacks in `public/assets/svg-default/**`. Use `App\Support\Media::assetSvg('path/to.svg')` to resolve the active media file with automatic fallback to the default copy.
+- The default favicon lives at `public/favicon.ico` (referenced via the `settings.favicon_path` key). Replace it through the Media Library or by dropping a new ICO file into `public/`.
+
+The public hero and social preview image default to `/media/svg/hero/hero-default.svg`; uploading a new asset through Settings replaces the stored path while the fallback remains available in version control.
 
 ## Usage
 - Visit `/login` to access the admin area. Configure the allowed wallet addresses in `.env.php`.
