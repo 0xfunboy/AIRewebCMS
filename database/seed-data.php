@@ -229,6 +229,7 @@ HTML
         [
             'name' => 'SKEW',
             'logo_url' => 'https://picsum.photos/seed/skew/200/100',
+            'badge_logo_url' => 'https://picsum.photos/seed/skew/200/100',
             'url' => 'https://skew.net',
             'summary' => 'Active partnership for P2P lending + debit card; building concierge agent with per-user instances.',
             'status' => 'Active',
@@ -236,6 +237,7 @@ HTML
         [
             'name' => 'Meteora',
             'logo_url' => 'https://picsum.photos/seed/meteora/200/100',
+            'badge_logo_url' => 'https://picsum.photos/seed/meteora/200/100',
             'url' => '#',
             'summary' => 'Utilizing Meteora\'s Airlock for token rewards and deep liquidity on Solana via their DLMM pools.',
             'status' => 'Active',
@@ -243,6 +245,7 @@ HTML
         [
             'name' => 'Custodiy',
             'logo_url' => 'https://picsum.photos/seed/custodiy/200/100',
+            'badge_logo_url' => 'https://picsum.photos/seed/custodiy/200/100',
             'url' => '#',
             'summary' => 'Official listing partner, ensuring secure and trusted access to our tokens.',
             'status' => 'Active',
@@ -250,6 +253,7 @@ HTML
         [
             'name' => 'CoinGecko',
             'logo_url' => 'https://picsum.photos/seed/coingecko/200/100',
+            'badge_logo_url' => 'https://picsum.photos/seed/coingecko/200/100',
             'url' => '#',
             'summary' => 'Listed on the world\'s largest independent crypto data aggregator.',
             'status' => 'Active',
@@ -257,6 +261,7 @@ HTML
         [
             'name' => 'Ethos Network',
             'logo_url' => 'https://picsum.photos/seed/ethos/200/100',
+            'badge_logo_url' => 'https://picsum.photos/seed/ethos/200/100',
             'url' => '#',
             'summary' => 'Ranked #8 among the Top 10 most credible agents in the ecosystem. (Q3 2024)',
             'status' => 'Active',
@@ -264,6 +269,7 @@ HTML
         [
             'name' => 'Wolfstreet (Cronos)',
             'logo_url' => 'https://picsum.photos/seed/wolfstreet/200/100',
+            'badge_logo_url' => 'https://picsum.photos/seed/wolfstreet/200/100',
             'url' => '#',
             'summary' => 'Graduated from our program with ongoing integrations on the Cronos chain.',
             'status' => 'Active',
@@ -271,6 +277,7 @@ HTML
         [
             'name' => 'BONK / BEST',
             'logo_url' => 'https://picsum.photos/seed/bonk/200/100',
+            'badge_logo_url' => 'https://picsum.photos/seed/bonk/200/100',
             'url' => '#',
             'summary' => 'Exploring potential integrations and partnerships within the BONK and BEST ecosystems.',
             'status' => 'In Discussion',
@@ -278,6 +285,7 @@ HTML
         [
             'name' => 'Pilot3AI',
             'logo_url' => 'https://picsum.photos/seed/pilot3ai/200/100',
+            'badge_logo_url' => 'https://picsum.photos/seed/pilot3ai/200/100',
             'url' => '#',
             'summary' => 'Discussing the development of a bespoke avatar agent for their innovative dApp.',
             'status' => 'In Discussion',

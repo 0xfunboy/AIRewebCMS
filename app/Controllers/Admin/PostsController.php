@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Models\BlogPost;
 use App\Services\Security\Csrf;
 use App\Support\Flash;
+use App\Support\Media;
 use App\Support\Uploads;
 use PDO;
 
@@ -148,6 +149,8 @@ final class PostsController extends Controller
             }
         }
 
+        $post['image_url'] = $this->normalizeImageValue($post['image_url']);
+
         $isUploadValid = $hasUpload && $uploadError === null;
 
         $errors = $this->validate($post, $ignoreId, $isUploadValid);
@@ -223,7 +226,7 @@ final class PostsController extends Controller
     private function storeUploadedFile(array $file, string $nameHint): string
     {
         $stored = Uploads::store($file, $nameHint);
-        return '/' . ltrim($stored['path'], '/');
+        return Media::normalizeMediaPath($stored['path']);
     }
 
     private function assertValidCsrf(?string $token, ?string $redirect = null): void
@@ -234,6 +237,20 @@ final class PostsController extends Controller
 
         Flash::set('admin.posts.error', 'Session expired, please try again.');
         $this->redirect($redirect ?? '/admin/posts');
+    }
+
+    private function normalizeImageValue(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return Media::normalizeMediaPath($value);
     }
 
     private function defaultPost(): array

@@ -188,8 +188,8 @@ final class SeedImporter
         }
 
         $stmt = $pdo->prepare(
-            'INSERT INTO partners (name, logo_url, url, summary, status, featured_order)
-             VALUES (:name, :logo_url, :url, :summary, :status, :order)'
+            'INSERT INTO partners (name, logo_url, badge_logo_url, url, summary, status, featured_order)
+             VALUES (:name, :logo_url, :badge_logo_url, :url, :summary, :status, :order)'
         );
 
         $order = 0;
@@ -197,6 +197,7 @@ final class SeedImporter
             $stmt->execute([
                 'name' => $partner['name'] ?? '',
                 'logo_url' => $partner['logo_url'] ?? '',
+                'badge_logo_url' => $partner['badge_logo_url'] ?? ($partner['logo_url'] ?? ''),
                 'url' => $partner['url'] ?? '#',
                 'summary' => $partner['summary'] ?? '',
                 'status' => $partner['status'] ?? 'Active',

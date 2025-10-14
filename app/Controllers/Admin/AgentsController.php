@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Models\Agent;
 use App\Services\Security\Csrf;
 use App\Support\Flash;
+use App\Support\Media;
 use App\Support\Uploads;
 use PDO;
 
@@ -140,6 +141,8 @@ final class AgentsController extends Controller
             }
         }
 
+        $agent['image_url'] = $this->normalizeImageValue($agent['image_url']);
+
         $isUploadValid = $hasUpload && $uploadError === null;
 
         $errors = $this->validate($agent, $isUploadValid);
@@ -203,7 +206,7 @@ final class AgentsController extends Controller
     private function storeUploadedFile(array $file, string $nameHint): string
     {
         $stored = Uploads::store($file, $nameHint);
-        return '/' . ltrim($stored['path'], '/');
+        return Media::normalizeMediaPath($stored['path']);
     }
 
     private function assertValidCsrf(?string $token, ?string $redirect = null): void
@@ -214,5 +217,19 @@ final class AgentsController extends Controller
 
         Flash::set('admin.agents.error', 'Session expired, please try again.');
         $this->redirect($redirect ?? '/admin/agents');
+    }
+
+    private function normalizeImageValue(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return Media::normalizeMediaPath($value);
     }
 }

@@ -119,9 +119,11 @@ final class PartnersController extends Controller
     private function prepareInput(array $source, array $files = []): array
     {
         $logoUrl = trim((string)($source['logo_url'] ?? ''));
+        $badgeLogoUrl = trim((string)($source['badge_logo_url'] ?? ''));
         $partner = [
             'name' => trim((string)($source['name'] ?? '')),
             'logo_url' => $logoUrl,
+            'badge_logo_url' => $badgeLogoUrl,
             'url' => trim((string)($source['url'] ?? '')),
             'summary' => trim((string)($source['summary'] ?? '')),
             'status' => trim((string)($source['status'] ?? 'Active')),
@@ -130,6 +132,7 @@ final class PartnersController extends Controller
 
         $uploadError = null;
         $hasUpload = $this->hasFileUpload($files['logo_upload'] ?? null);
+        $hasBadgeUpload = $this->hasFileUpload($files['badge_logo_upload'] ?? null);
         if ($hasUpload) {
             try {
                 $partner['logo_url'] = $this->storeUploadedFile($files['logo_upload'], $partner['name'] ?: 'partner-logo');
@@ -138,6 +141,18 @@ final class PartnersController extends Controller
                 $partner['logo_url'] = $logoUrl;
             }
         }
+
+        if ($hasBadgeUpload) {
+            try {
+                $partner['badge_logo_url'] = $this->storeUploadedFile($files['badge_logo_upload'], ($partner['name'] ?: 'partner') . '-badge');
+            } catch (\Throwable $e) {
+                $uploadError = $uploadError ?? $e->getMessage();
+                $partner['badge_logo_url'] = $badgeLogoUrl;
+            }
+        }
+
+        $partner['logo_url'] = $this->normalizeImageValue($partner['logo_url']);
+        $partner['badge_logo_url'] = $this->normalizeImageValue($partner['badge_logo_url']);
 
         $isUploadValid = $hasUpload && $uploadError === null;
         $errors = $this->validate($partner, $isUploadValid);
@@ -180,6 +195,7 @@ final class PartnersController extends Controller
         return [
             'name' => '',
             'logo_url' => '',
+            'badge_logo_url' => '',
             'url' => '',
             'summary' => '',
             'status' => 'Active',
@@ -206,5 +222,19 @@ final class PartnersController extends Controller
 
         Flash::set('admin.partners.error', 'Session expired, please try again.');
         $this->redirect($redirect ?? '/admin/partners');
+    }
+
+    private function normalizeImageValue(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return Media::normalizeMediaPath($value);
     }
 }

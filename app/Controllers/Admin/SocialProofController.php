@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Models\SocialProofItem;
 use App\Services\Security\Csrf;
 use App\Support\Flash;
+use App\Support\Media;
 use App\Support\Uploads;
 use PDO;
 
@@ -139,6 +140,8 @@ final class SocialProofController extends Controller
             }
         }
 
+        $item['author_avatar_url'] = $this->normalizeImageValue($item['author_avatar_url']);
+
         $isUploadValid = $hasUpload && $uploadError === null;
 
         $errors = $this->validate($item, $isUploadValid);
@@ -201,7 +204,7 @@ final class SocialProofController extends Controller
     private function storeUploadedFile(array $file, string $nameHint): string
     {
         $stored = Uploads::store($file, $nameHint);
-        return '/' . ltrim($stored['path'], '/');
+        return Media::normalizeMediaPath($stored['path']);
     }
 
     private function assertValidCsrf(?string $token, ?string $redirect = null): void
@@ -212,5 +215,19 @@ final class SocialProofController extends Controller
 
         Flash::set('admin.social.error', 'Session expired, please try again.');
         $this->redirect($redirect ?? '/admin/social-proof');
+    }
+
+    private function normalizeImageValue(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return Media::normalizeMediaPath($value);
     }
 }

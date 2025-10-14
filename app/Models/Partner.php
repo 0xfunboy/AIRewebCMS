@@ -10,6 +10,7 @@ final class Partner extends Model
     protected array $fillable = [
         'name',
         'logo_url',
+        'badge_logo_url',
         'url',
         'summary',
         'status',

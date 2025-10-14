@@ -41,20 +41,30 @@ use App\Core\View;
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <?php View::renderPartial('admin/partials/media-input', [
-                    'label' => 'Partner Logo',
+                    'label' => 'Partner Card Image',
                     'name' => 'logo_url',
                     'uploadName' => 'logo_upload',
                     'current' => $partner['logo_url'] ?? '',
-                    'helper' => 'Use PNG, SVG, WEBP, or ICO files up to 5 MB.',
+                    'helper' => 'Displayed on the partners page. PNG/SVG/WebP/ICO up to 5 MB.',
                 ]); ?>
             </div>
-            <label class="text-sm text-muted flex flex-col gap-2">
-                <span>Website URL</span>
-                <input type="url" name="url" required
-                       value="<?= htmlspecialchars($partner['url'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                       class="bg-bg2 border border-stroke rounded-md px-3 py-2 text-acc focus:border-cy focus:outline-none">
-            </label>
+            <div>
+                <?php View::renderPartial('admin/partials/media-input', [
+                    'label' => 'Trusted Badge Logo',
+                    'name' => 'badge_logo_url',
+                    'uploadName' => 'badge_logo_upload',
+                    'current' => $partner['badge_logo_url'] ?? '',
+                    'helper' => 'Monochrome or transparent logo used in the homepage trust ribbon.',
+                ]); ?>
+            </div>
         </div>
+
+        <label class="text-sm text-muted flex flex-col gap-2">
+            <span>Website URL</span>
+            <input type="url" name="url" required
+                   value="<?= htmlspecialchars($partner['url'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                   class="bg-bg2 border border-stroke rounded-md px-3 py-2 text-acc focus:border-cy focus:outline-none">
+        </label>
 
         <label class="text-sm text-muted flex flex-col gap-2">
             <span>Summary</span>

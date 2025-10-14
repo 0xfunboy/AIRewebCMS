@@ -258,10 +258,11 @@ function importPartners(\PDO $pdo, array $partners): void
     }
 
     $stmt = $pdo->prepare(
-        'INSERT INTO partners (name, logo_url, url, summary, status, featured_order)
-         VALUES (:name, :logo_url, :url, :summary, :status, :order)
+        'INSERT INTO partners (name, logo_url, badge_logo_url, url, summary, status, featured_order)
+         VALUES (:name, :logo_url, :badge_logo_url, :url, :summary, :status, :order)
          ON DUPLICATE KEY UPDATE
             logo_url = VALUES(logo_url),
+            badge_logo_url = VALUES(badge_logo_url),
             url = VALUES(url),
             summary = VALUES(summary),
             status = VALUES(status),
@@ -273,6 +274,7 @@ function importPartners(\PDO $pdo, array $partners): void
         $stmt->execute([
             'name' => $partner['name'] ?? '',
             'logo_url' => $partner['logo_url'] ?? '',
+            'badge_logo_url' => $partner['badge_logo_url'] ?? ($partner['logo_url'] ?? ''),
             'url' => $partner['url'] ?? '#',
             'summary' => $partner['summary'] ?? '',
             'status' => $partner['status'] ?? 'Active',

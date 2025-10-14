@@ -85,6 +85,7 @@ final class AdminInlineController extends Controller
                 'url' => 'url',
                 'status' => 'string',
                 'logo_url' => 'image',
+                'badge_logo_url' => 'image',
             ],
         ],
     ];

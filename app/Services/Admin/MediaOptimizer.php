@@ -13,7 +13,7 @@ final class MediaOptimizer
 
     /** @var array<string,array{primary:string,columns:string[]}> */
     private array $tableMap = [
-        'partners' => ['primary' => 'id', 'columns' => ['logo_url']],
+        'partners' => ['primary' => 'id', 'columns' => ['logo_url', 'badge_logo_url']],
         'agents' => ['primary' => 'id', 'columns' => ['image_url']],
         'team_members' => ['primary' => 'id', 'columns' => ['avatar_url']],
         'social_proof_items' => ['primary' => 'id', 'columns' => ['author_avatar_url']],

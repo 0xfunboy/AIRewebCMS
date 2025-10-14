@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Models\TeamMember;
 use App\Services\Security\Csrf;
 use App\Support\Flash;
+use App\Support\Media;
 use App\Support\Uploads;
 use PDO;
 
@@ -139,6 +140,8 @@ final class TeamController extends Controller
             }
         }
 
+        $member['avatar_url'] = $this->normalizeImageValue($member['avatar_url']);
+
         $isUploadValid = $hasUpload && $uploadError === null;
 
         $errors = $this->validate($member, $isUploadValid);
@@ -193,7 +196,7 @@ final class TeamController extends Controller
     private function storeUploadedFile(array $file, string $nameHint): string
     {
         $stored = Uploads::store($file, $nameHint);
-        return '/' . ltrim($stored['path'], '/');
+        return Media::normalizeMediaPath($stored['path']);
     }
 
     private function assertValidCsrf(?string $token, ?string $redirect = null): void
@@ -204,5 +207,19 @@ final class TeamController extends Controller
 
         Flash::set('admin.team.error', 'Session expired, please try again.');
         $this->redirect($redirect ?? '/admin/team');
+    }
+
+    private function normalizeImageValue(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return Media::normalizeMediaPath($value);
     }
 }

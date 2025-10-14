@@ -102,6 +102,13 @@ Authenticated admins see a toolbar on every public page:
 - The Media Library grid now includes extension filters, variant pills (e.g. SVG + PNG/WebP), instant clipboard copy, and a streaming log under the action buttons. `Local Mirror Images` imports any remote URLs referenced in settings/content, while `Optimize to WebP` reports clear errors if Imagick/GD is unavailable so admins know the conversion was skipped.
 - Default UI/brand assets ship with the repo under `public/media/svg/**` (editable) with version-controlled fallbacks in `public/assets/svg-default/**`. Use `App\Support\Media::assetSvg('path/to.svg')` to resolve the active media file with automatic fallback to the default copy.
 - The default favicon lives at `public/favicon.ico` (referenced via the `settings.favicon_path` key). Replace it through the Media Library or by dropping a new ICO file into `public/`.
+- Partners now expose two image slots: the standard **Partner Card Image** for the `/partners` page and a dedicated **Trusted Badge Logo** (monochrome/transparent) rendered in the homepage “Trusted By The Best” ribbon.
+
+For existing databases add the new column before syncing content:
+
+```sql
+ALTER TABLE partners ADD COLUMN badge_logo_url VARCHAR(255) NULL AFTER logo_url;
+```
 
 The public hero and social preview image default to `/media/svg/hero/hero-default.svg`; uploading a new asset through Settings replaces the stored path while the fallback remains available in version control.
 

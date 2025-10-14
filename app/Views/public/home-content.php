@@ -149,16 +149,22 @@ $activePartners = array_values(array_filter($partners, fn ($partner) => ($partne
         </div>
         <div class="flex flex-wrap justify-center items-center gap-x-12 gap-y-6">
             <?php foreach ($activePartners as $partner): ?>
+                <?php
+                $badgeLogo = $partner['badge_logo_url'] ?? '';
+                if ($badgeLogo === '') {
+                    $badgeLogo = $partner['logo_url'] ?? '';
+                }
+                ?>
                 <a href="<?= htmlspecialchars($partner['url'], ENT_QUOTES, 'UTF-8'); ?>"
                    target="_blank"
                    rel="noopener noreferrer"
                    title="<?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?>"
                    <?= AdminMode::dataAttrs('partners', 'url', $partner['id'], 'url'); ?>>
                     <img loading="lazy"
-                         src="<?= htmlspecialchars($partner['logo_url'], ENT_QUOTES, 'UTF-8'); ?>"
+                         src="<?= htmlspecialchars($badgeLogo, ENT_QUOTES, 'UTF-8'); ?>"
                          alt="<?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?>"
                          class="h-10 object-contain grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all"
-                         <?= AdminMode::dataAttrs('partners', 'logo_url', $partner['id'], 'image'); ?> />
+                         <?= AdminMode::dataAttrs('partners', 'badge_logo_url', $partner['id'], 'image'); ?> />
                 </a>
             <?php endforeach; ?>
         </div>

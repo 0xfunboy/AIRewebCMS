@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS partners (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(120) NOT NULL,
     logo_url VARCHAR(255) NOT NULL,
+    badge_logo_url VARCHAR(255) NULL,
     url VARCHAR(255) NOT NULL,
     summary TEXT NOT NULL,
     status ENUM('Active','In Discussion') NOT NULL,
