@@ -1,4 +1,6 @@
 <?php
+use App\Support\Media;
+
 $columns = [
     [
         'title' => 'Navigate',
@@ -48,13 +50,22 @@ $social = [
     ['name' => 'TikTok', 'icon' => 'tiktok', 'url' => 'https://www.tiktok.com/@airewardrop'],
     ['name' => 'Instagram', 'icon' => 'instagram', 'url' => 'https://www.instagram.com/airewardrop/'],
 ];
+
+$siteLogoUrl = $siteLogo ?? '';
+if ($siteLogoUrl === '') {
+    $siteLogoUrl = Media::assetSvg('logo/site-logo.svg');
+}
 ?>
 <footer class="border-t border-stroke bg-bg2">
     <div class="container mx-auto max-w-6xl px-4 py-12">
         <div class="grid gap-8 md:grid-cols-3">
             <div class="flex flex-col items-start gap-4">
                 <a href="/" class="flex items-center gap-2 text-xl font-bold text-acc">
-                    <?= icon_svg('logo', 'h-8 w-8 text-pri'); ?>
+                    <?php if ($siteLogoUrl !== ''): ?>
+                        <img src="<?= htmlspecialchars($siteLogoUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="AIRewardrop" class="h-8 w-auto">
+                    <?php else: ?>
+                        <?= icon_svg('logo', 'h-8 w-8 text-pri'); ?>
+                    <?php endif; ?>
                     <span>AIRewardrop</span>
                 </a>
                 <p class="text-muted text-sm max-w-xs">

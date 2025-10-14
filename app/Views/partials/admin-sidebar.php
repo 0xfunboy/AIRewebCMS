@@ -1,10 +1,20 @@
 <?php
 use App\Core\View;
+use App\Support\Media;
+
+$siteLogoUrl = $siteLogo ?? '';
+if ($siteLogoUrl === '') {
+    $siteLogoUrl = Media::assetSvg('logo/site-logo.svg');
+}
 ?>
 <aside class="w-64 bg-bg2 border-r border-stroke hidden lg:flex flex-col">
     <div class="px-6 py-6 border-b border-stroke">
         <a href="/admin/dashboard" class="flex items-center gap-3 text-xl font-bold text-acc">
-            <?php View::renderPartial('partials/logo', ['class' => 'h-7 w-7 text-pri']); ?>
+            <?php if ($siteLogoUrl !== ''): ?>
+                <img src="<?= htmlspecialchars($siteLogoUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="AIRewardrop" class="h-7 w-auto">
+            <?php else: ?>
+                <?php View::renderPartial('partials/logo', ['class' => 'h-7 w-7 text-pri']); ?>
+            <?php endif; ?>
             <span>Admin</span>
         </a>
     </div>

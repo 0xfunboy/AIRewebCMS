@@ -1,5 +1,5 @@
 <?php
-/** @var array<int, array{path:string,url:string,size:int,modified:int,type:string}> $media */
+/** @var array<int, array{path:string,url:string,size:int,modified:int,type:string,variants:array<string,array{path:string,url:string,size:int,modified:int}>}> $media */
 /** @var string|null $notice */
 /** @var string|null $error */
 

@@ -4,8 +4,14 @@
 /** @var array $contentData */
 
 use App\Core\View;
+use App\Services\Cms\ContentRepository;
+use App\Support\Media;
 
 $pageTitle = isset($title) ? $title . ' | AIRewardrop Admin' : 'Admin | AIRewardrop';
+
+$repository = new ContentRepository();
+$settings = $repository->getSettings();
+$adminSiteLogo = Media::siteLogoUrl($settings['site_logo'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -43,7 +49,9 @@ $pageTitle = isset($title) ? $title . ' | AIRewardrop Admin' : 'Admin | AIReward
     <script type="module" src="/assets/js/admin.js" defer></script>
 </head>
 <body class="bg-bg text-txt min-h-screen flex">
-    <?php View::renderPartial('partials/admin-sidebar'); ?>
+    <?php View::renderPartial('partials/admin-sidebar', [
+        'siteLogo' => $adminSiteLogo,
+    ]); ?>
     <div class="flex-1 min-h-screen flex flex-col">
         <?php View::renderPartial('partials/admin-header'); ?>
         <main class="flex-1 p-8">

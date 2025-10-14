@@ -53,20 +53,7 @@ if ($shareImage === '') {
 $shareImageUrl = $shareImage ? $assetUrl($shareImage) : '';
 $faviconPath = $publicPath($layoutSettings['favicon_path'] ?? '/favicon.ico');
 $currentUrl = $assetUrl($_SERVER['REQUEST_URI'] ?? '/');
-$siteLogoSetting = (string)($layoutSettings['site_logo'] ?? '');
-$siteLogoPath = '';
-if ($siteLogoSetting !== '') {
-    if (str_starts_with($siteLogoSetting, 'http://') || str_starts_with($siteLogoSetting, 'https://')) {
-        $siteLogoPath = $siteLogoSetting;
-    } else {
-        $absoluteLogo = dirname(__DIR__, 2) . '/public/' . ltrim($siteLogoSetting, '/');
-        $siteLogoPath = is_file($absoluteLogo)
-            ? $publicPath($siteLogoSetting)
-            : Media::assetSvg('logo/site-logo.svg');
-    }
-} else {
-    $siteLogoPath = Media::assetSvg('logo/site-logo.svg');
-}
+$siteLogoPath = Media::siteLogoUrl($layoutSettings['site_logo'] ?? '');
 
 $isAdmin = AdminMode::isAdmin();
 $adminModeEnabled = AdminMode::isEnabled();
@@ -166,7 +153,9 @@ if ($isAdmin) {
     <main class="container mx-auto max-w-6xl px-4 py-8 pt-28 space-y-16">
         <?php View::renderPartial($contentTemplate, $contentData ?? []); ?>
     </main>
-    <?php View::renderPartial('partials/footer'); ?>
+    <?php View::renderPartial('partials/footer', [
+        'siteLogo' => $siteLogoPath,
+    ]); ?>
     <?php if ($isAdmin): ?>
         <script>
             window.ADMIN_CONTEXT = {

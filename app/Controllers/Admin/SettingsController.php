@@ -94,7 +94,8 @@ final class SettingsController extends Controller
 
         if (isset($_FILES['site_logo']) && is_array($_FILES['site_logo']) && $this->hasFileUpload($_FILES['site_logo'])) {
             $stored = Uploads::store($_FILES['site_logo'], 'site-logo');
-            $updates['site_logo'] = Media::normalizeMediaPath($stored['path']);
+            $promoted = Media::promoteToSvgLibrary($stored['path'], 'logo/site-logo');
+            $updates['site_logo'] = $promoted ?? Media::normalizeMediaPath($stored['path']);
         }
 
         if (isset($_FILES['favicon']) && is_array($_FILES['favicon']) && $this->hasFileUpload($_FILES['favicon'])) {
@@ -132,6 +133,7 @@ final class SettingsController extends Controller
         $this->persistSettings($payload);
         return 'SEO settings saved.';
     }
+
 
     private function hasFileUpload(array $file): bool
     {

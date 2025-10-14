@@ -17,8 +17,8 @@ final class Media
     public static function assetSvg(string $relativePath, ?string $fallbackRelativePath = null): string
     {
         $candidate = self::stripKnownPrefixes(self::sanitizeRelative($relativePath));
-        if ($candidate !== '') {
-            $mediaCandidate = self::MEDIA_SVG_BASE . '/' . $candidate;
+        foreach (self::expandCandidates($candidate) as $option) {
+            $mediaCandidate = self::MEDIA_SVG_BASE . '/' . $option;
             if (self::fileExists($mediaCandidate)) {
                 return self::publicUrl($mediaCandidate);
             }
@@ -28,8 +28,8 @@ final class Media
             ? self::stripKnownPrefixes(self::sanitizeRelative($fallbackRelativePath))
             : ($candidate !== '' ? $candidate : '');
 
-        if ($fallbackRelative !== '') {
-            $defaultCandidate = self::DEFAULT_SVG_BASE . '/' . $fallbackRelative;
+        foreach (self::expandCandidates($fallbackRelative) as $option) {
+            $defaultCandidate = self::DEFAULT_SVG_BASE . '/' . $option;
             if (self::fileExists($defaultCandidate)) {
                 return self::publicUrl($defaultCandidate);
             }
@@ -49,8 +49,8 @@ final class Media
     public static function resolveSvgPath(string $relativePath, ?string $fallbackRelativePath = null): ?string
     {
         $candidate = self::stripKnownPrefixes(self::sanitizeRelative($relativePath));
-        if ($candidate !== '') {
-            $mediaCandidate = self::absolutePath(self::MEDIA_SVG_BASE . '/' . $candidate);
+        foreach (self::expandCandidates($candidate) as $option) {
+            $mediaCandidate = self::absolutePath(self::MEDIA_SVG_BASE . '/' . $option);
             if ($mediaCandidate !== null && is_file($mediaCandidate)) {
                 return $mediaCandidate;
             }
@@ -60,8 +60,8 @@ final class Media
             ? self::stripKnownPrefixes(self::sanitizeRelative($fallbackRelativePath))
             : ($candidate !== '' ? $candidate : '');
 
-        if ($fallbackRelative !== '') {
-            $defaultCandidate = self::absolutePath(self::DEFAULT_SVG_BASE . '/' . $fallbackRelative);
+        foreach (self::expandCandidates($fallbackRelative) as $option) {
+            $defaultCandidate = self::absolutePath(self::DEFAULT_SVG_BASE . '/' . $option);
             if ($defaultCandidate !== null && is_file($defaultCandidate)) {
                 return $defaultCandidate;
             }
@@ -101,6 +101,66 @@ final class Media
         return self::MEDIA_SVG_BASE . '/' . $sanitized;
     }
 
+    public static function siteLogoUrl(?string $value): string
+    {
+        $trimmed = trim((string)$value);
+        if ($trimmed !== '') {
+            if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
+                return $trimmed;
+            }
+
+            $publicPath = '/' . ltrim($trimmed, '/');
+            $absolute = self::absolutePath($publicPath);
+            if ($absolute !== null && is_file($absolute)) {
+                return $publicPath;
+            }
+        }
+
+        return self::assetSvg('logo/site-logo.svg');
+    }
+
+    public static function promoteToSvgLibrary(string $relativePath, string $targetBasename): ?string
+    {
+        $normalized = self::normalizeMediaPath($relativePath);
+        $source = dirname(__DIR__, 2) . '/public/' . ltrim($normalized, '/');
+
+        if (!is_file($source)) {
+            return null;
+        }
+
+        $extension = strtolower(pathinfo($source, PATHINFO_EXTENSION));
+        if ($extension === '') {
+            $extension = 'svg';
+        }
+
+        $targetBase = trim($targetBasename, '/');
+        if ($targetBase === '') {
+            $targetBase = 'site-logo';
+        }
+
+        $targetRelative = 'media/svg/' . $targetBase . '.' . $extension;
+        $targetAbsolute = dirname(__DIR__, 2) . '/public/' . $targetRelative;
+
+        $targetDir = dirname($targetAbsolute);
+        if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
+            return null;
+        }
+
+        $pattern = $targetDir . '/' . basename($targetBase) . '.*';
+        foreach (glob($pattern) ?: [] as $existing) {
+            if (is_file($existing)) {
+                @unlink($existing);
+            }
+        }
+
+        if (!copy($source, $targetAbsolute)) {
+            return null;
+        }
+
+        @chmod($targetAbsolute, 0644);
+        return '/' . ltrim($targetRelative, '/');
+    }
+
     private static function sanitizeRelative(string $relativePath): string
     {
         $relativePath = str_replace(["\\", "\0"], ['/', ''], trim($relativePath));
@@ -127,6 +187,48 @@ final class Media
         }
 
         return $relative;
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private static function expandCandidates(string $relative): array
+    {
+        $relative = ltrim($relative, '/');
+        if ($relative === '') {
+            return [];
+        }
+
+        $candidates = [];
+        $info = pathinfo($relative);
+        $dir = $info['dirname'] ?? '';
+        $filename = $info['filename'] ?? '';
+        $extension = strtolower($info['extension'] ?? '');
+
+        if ($filename === '') {
+            $filename = $relative;
+            $dir = '';
+        }
+
+        $base = $dir !== '' && $dir !== '.' ? $dir . '/' . $filename : $filename;
+
+        $preferred = ['svg', 'png', 'webp'];
+
+        if ($extension === '') {
+            foreach ($preferred as $ext) {
+                $candidates[] = $base . '.' . $ext;
+            }
+        } else {
+            $candidates[] = $base . '.' . $extension;
+            foreach ($preferred as $ext) {
+                if ($ext === $extension) {
+                    continue;
+                }
+                $candidates[] = $base . '.' . $ext;
+            }
+        }
+
+        return array_values(array_unique($candidates));
     }
 
     private static function publicUrl(string $publicPath): string

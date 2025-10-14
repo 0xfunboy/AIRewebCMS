@@ -22,7 +22,7 @@ $normalizeAsset = static function (?string $value): string {
 };
 
 $siteLogo = $normalizeAsset($settings['site_logo'] ?? '');
-$siteLogoPreview = $siteLogo !== '' ? $siteLogo : Media::assetSvg('logo/site-logo.svg');
+$siteLogoPreview = Media::siteLogoUrl($settings['site_logo'] ?? '');
 $favicon = $normalizeAsset($settings['favicon_path'] ?? '/favicon.svg');
 $shareImage = $normalizeAsset($settings['seo_share_image'] ?? ($settings['og_image'] ?? ''));
 if ($shareImage === '') {

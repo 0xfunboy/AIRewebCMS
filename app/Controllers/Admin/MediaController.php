@@ -119,14 +119,14 @@ final class MediaController extends Controller
      */
     private function gatherMedia(): array
     {
-        $root = realpath(dirname(__DIR__, 2) . '/public/media');
-        if ($root === false || !is_dir($root)) {
+        $root = dirname(__DIR__, 2) . '/public/media';
+        if (!is_dir($root)) {
             return [];
         }
 
         $files = [];
-        $publicRoot = realpath(dirname(__DIR__, 2) . '/public');
-        $this->scanMediaDirectory($root, $files, $publicRoot !== false ? strlen($publicRoot) + 1 : 0);
+        $publicRoot = rtrim(dirname(__DIR__, 2) . '/public', '/');
+        $this->scanMediaDirectory($root, $files, strlen($publicRoot) + 1);
 
         $grouped = [];
         foreach ($files as $file) {

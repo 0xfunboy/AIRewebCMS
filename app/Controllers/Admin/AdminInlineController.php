@@ -236,6 +236,12 @@ final class AdminInlineController extends Controller
         try {
             $stored = Uploads::store($_FILES['file'], ($model === 'settings' ? $key : (string)$idValue) . '-' . $key);
             $storedPath = Media::normalizeMediaPath($stored['path']);
+            if ($model === 'settings' && $key === 'site_logo') {
+                $promoted = Media::promoteToSvgLibrary($stored['path'], 'logo/site-logo');
+                if ($promoted !== null) {
+                    $storedPath = $promoted;
+                }
+            }
             $oldValue = $this->performUpdate($model, $key, $storedPath, $idValue);
             $this->logChange($model, $key, $idValue, $oldValue, $storedPath);
         } catch (\Throwable $e) {
