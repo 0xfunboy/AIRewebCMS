@@ -25,7 +25,7 @@ final class MediaOptimizer
     public function __construct(PDO $db)
     {
         $this->db = $db;
-        $this->mediaRoot = dirname(__DIR__, 2) . '/public/media';
+        $this->mediaRoot = dirname(__DIR__, 3) . '/public/media';
     }
 
     /**
