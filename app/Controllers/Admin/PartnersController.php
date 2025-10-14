@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Models\Partner;
 use App\Services\Security\Csrf;
 use App\Support\Flash;
+use App\Support\Media;
 use App\Support\Uploads;
 use PDO;
 
@@ -194,7 +195,7 @@ final class PartnersController extends Controller
     private function storeUploadedFile(array $file, string $nameHint): string
     {
         $stored = Uploads::store($file, $nameHint);
-        return '/' . ltrim($stored['path'], '/');
+        return Media::normalizeMediaPath($stored['path']);
     }
 
     private function assertValidCsrf(?string $token, ?string $redirect = null): void

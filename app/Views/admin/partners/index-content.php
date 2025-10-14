@@ -7,7 +7,10 @@
 
 <section class="space-y-6">
     <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-semibold text-acc">Partners</h1>
+        <div>
+            <h1 class="text-2xl font-semibold text-acc">Partners</h1>
+            <p class="text-xs text-muted mt-1">Active partners appear in the “Trusted By The Best” section on the homepage.</p>
+        </div>
         <a href="/admin/partners/create" class="inline-flex items-center px-4 py-2 rounded-md bg-pri text-white text-sm font-medium hover:bg-red-500/80 transition">
             New Partner
         </a>

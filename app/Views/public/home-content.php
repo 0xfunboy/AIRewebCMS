@@ -141,11 +141,24 @@ $activePartners = array_values(array_filter($partners, fn ($partner) => ($partne
         <div class="text-center mb-12">
             <h2 class="text-3xl md:text-4xl font-extrabold text-acc tracking-tight">Trusted By The Best</h2>
             <p class="mt-4 max-w-2xl mx-auto text-muted">We collaborate with leading projects and platforms to push the boundaries of Web3.</p>
+            <?php if (AdminMode::isAdmin()): ?>
+                <a href="/admin/partners" class="inline-flex items-center gap-2 mt-4 text-sm font-semibold text-cy hover:text-pri transition-colors">
+                    Manage partners →
+                </a>
+            <?php endif; ?>
         </div>
         <div class="flex flex-wrap justify-center items-center gap-x-12 gap-y-6">
             <?php foreach ($activePartners as $partner): ?>
-                <a href="<?= htmlspecialchars($partner['url'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="<?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?>">
-                    <img loading="lazy" src="<?= htmlspecialchars($partner['logo_url'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?>" class="h-10 object-contain grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all" />
+                <a href="<?= htmlspecialchars($partner['url'], ENT_QUOTES, 'UTF-8'); ?>"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   title="<?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?>"
+                   <?= AdminMode::dataAttrs('partners', 'url', $partner['id'], 'url'); ?>>
+                    <img loading="lazy"
+                         src="<?= htmlspecialchars($partner['logo_url'], ENT_QUOTES, 'UTF-8'); ?>"
+                         alt="<?= htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8'); ?>"
+                         class="h-10 object-contain grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all"
+                         <?= AdminMode::dataAttrs('partners', 'logo_url', $partner['id'], 'image'); ?> />
                 </a>
             <?php endforeach; ?>
         </div>
