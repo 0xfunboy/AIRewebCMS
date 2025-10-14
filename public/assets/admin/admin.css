@@ -249,3 +249,320 @@ body.admin-mode-active .admin-editing-outline {
     background: rgba(255, 255, 255, 0.1);
     color: #f5f7ff;
 }
+
+.admin-toast.fade {
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+
+.media-input__url-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.media-input__url-field {
+    flex: 1 1 auto;
+}
+
+.media-input__copy {
+    flex: 0 0 auto;
+    background: rgba(53, 224, 255, 0.18);
+    border: 1px solid rgba(53, 224, 255, 0.35);
+    color: #35e0ff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease, border 0.2s ease;
+}
+
+.media-input__copy:hover {
+    background: rgba(53, 224, 255, 0.28);
+    border-color: rgba(53, 224, 255, 0.55);
+}
+
+.media-input__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.media-input__button {
+    background: rgba(53, 224, 255, 0.18);
+    border: 1px solid rgba(53, 224, 255, 0.35);
+    color: #35e0ff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease, border 0.2s ease, transform 0.2s ease;
+}
+
+.media-input__button.secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #f5f7ff;
+}
+
+.media-input__button:hover {
+    background: rgba(53, 224, 255, 0.28);
+    border-color: rgba(53, 224, 255, 0.55);
+    transform: translateY(-1px);
+}
+
+.media-input__button.secondary:hover {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+.media-card__thumb {
+    background: rgba(18, 18, 40, 0.85);
+}
+
+.media-card__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.media-card__badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.media-card__badge--used {
+    background: rgba(46, 217, 125, 0.16);
+    color: #2ed97d;
+}
+
+.media-card__badge--unused {
+    background: rgba(160, 176, 195, 0.18);
+    color: #a0b0c3;
+}
+
+.media-card__actions {
+    margin-top: 4px;
+}
+
+.media-card__action {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: #f5f7ff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+    text-decoration: none;
+}
+
+.media-card__action:hover {
+    background: rgba(255, 255, 255, 0.16);
+    transform: translateY(-1px);
+}
+
+.media-card__action.danger {
+    background: rgba(240, 58, 58, 0.18);
+    color: #ffb4b4;
+}
+
+.media-card__action.danger:hover {
+    background: rgba(240, 58, 58, 0.28);
+}
+
+.media-card--loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.media-picker__content {
+    max-width: 900px;
+    width: min(900px, 100%);
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.media-picker__header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.media-picker__title {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.media-picker__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.media-picker__search,
+.media-picker__filter {
+    background: #12122a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f5f7ff;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    flex: 1 1 220px;
+}
+
+.media-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 14px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.media-picker__item {
+    background: #12122a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border 0.2s ease, transform 0.2s ease;
+}
+
+.media-picker__item:hover {
+    border-color: rgba(53, 224, 255, 0.35);
+    transform: translateY(-2px);
+}
+
+.media-picker__thumb {
+    background: rgba(18, 18, 40, 0.85);
+    border-radius: 8px;
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.media-picker__thumb img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.media-picker__type {
+    font-size: 12px;
+    font-weight: 700;
+    color: #a0b0c3;
+}
+
+.media-picker__details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.media-picker__name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f5f7ff;
+    word-break: break-all;
+}
+
+.media-picker__meta {
+    font-size: 12px;
+    color: #a0b0c3;
+}
+
+.media-picker__badge {
+    align-self: flex-start;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: 999px;
+    padding: 4px 8px;
+}
+
+.media-picker__badge.is-used {
+    background: rgba(46, 217, 125, 0.16);
+    color: #2ed97d;
+}
+
+.media-picker__badge.is-free {
+    background: rgba(160, 176, 195, 0.18);
+    color: #a0b0c3;
+}
+
+.media-picker__actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.media-picker__select {
+    background: rgba(53, 224, 255, 0.18);
+    border: 1px solid rgba(53, 224, 255, 0.35);
+    color: #35e0ff;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease, border 0.2s ease, transform 0.2s ease;
+}
+
+.media-picker__select:hover {
+    background: rgba(53, 224, 255, 0.28);
+    border-color: rgba(53, 224, 255, 0.55);
+    transform: translateY(-1px);
+}
+
+.media-picker__footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.media-picker__button {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f5f7ff;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease, border 0.2s ease;
+}
+
+.media-picker__button:hover {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.24);
+}
+
+.media-picker__loading {
+    font-size: 13px;
+    color: #a0b0c3;
+}
+
+.media-picker__empty {
+    font-size: 13px;
+    color: #a0b0c3;
+}
+
+body.admin-modal-open {
+    overflow: hidden;
+}

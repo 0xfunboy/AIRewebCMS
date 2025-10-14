@@ -47,23 +47,28 @@ $previewUrl = $normalize($current);
         >
         <span class="text-xs text-muted <?= $previewUrl !== '' ? 'hidden' : '' ?>" data-media-placeholder>No preview available</span>
     </div>
-    <label class="text-sm text-muted flex flex-col gap-2">
-        <span>Media URL</span>
-        <input type="url"
-               name="<?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>"
-               value="<?= htmlspecialchars($current, ENT_QUOTES, 'UTF-8') ?>"
-               class="bg-bg2 border border-stroke rounded-md px-3 py-2 text-acc focus:border-cy focus:outline-none"
-               placeholder="https://example.com/image.png"
-               data-media-url>
-    </label>
-    <div class="flex flex-wrap items-center gap-3 text-sm text-muted">
-        <label class="inline-flex flex-col gap-2">
-            <span>Select from device</span>
-            <input type="file"
-                   name="<?= htmlspecialchars($uploadName, ENT_QUOTES, 'UTF-8') ?>"
-                   accept="<?= htmlspecialchars($accept, ENT_QUOTES, 'UTF-8') ?>"
-                   data-media-file>
+    <div class="space-y-2">
+        <label class="text-sm text-muted flex flex-col gap-2">
+            <span>Media URL</span>
+            <div class="media-input__url-row">
+                <input type="text"
+                       name="<?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>"
+                       value="<?= htmlspecialchars($current, ENT_QUOTES, 'UTF-8') ?>"
+                       class="bg-bg2 border border-stroke rounded-md px-3 py-2 text-acc focus:border-cy focus:outline-none media-input__url-field"
+                       readonly
+                       data-media-url>
+                <button type="button" class="media-input__copy" data-media-copy>Copy URL</button>
+            </div>
         </label>
+    </div>
+    <div class="flex flex-wrap items-center gap-2 text-sm text-muted media-input__actions">
+        <input type="file"
+               name="<?= htmlspecialchars($uploadName, ENT_QUOTES, 'UTF-8') ?>"
+               accept="<?= htmlspecialchars($accept, ENT_QUOTES, 'UTF-8') ?>"
+               class="hidden"
+               data-media-file>
+        <button type="button" class="media-input__button" data-media-upload>Upload image</button>
+        <button type="button" class="media-input__button secondary" data-media-select>Select from media</button>
         <span class="text-xs text-cy hidden" data-media-upload-label>New upload will replace the current file after saving.</span>
     </div>
     <?php if (!empty($helper)): ?>

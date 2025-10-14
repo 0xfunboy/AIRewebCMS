@@ -33,7 +33,11 @@ $availableTypes = array_keys($availableTypes);
 sort($availableTypes);
 ?>
 
-<section class="space-y-6 max-w-6xl">
+<section
+    class="space-y-6 max-w-6xl"
+    data-media-library
+    data-csrf-token="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>"
+>
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-semibold text-acc">Media Library</h1>
@@ -67,7 +71,7 @@ sort($availableTypes);
                         <input type="file" name="file" accept=".png,.jpg,.jpeg,.webp,.svg,.ico" class="text-xs md:text-sm">
                     </label>
                     <button type="submit" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-pri text-white text-sm font-medium hover:bg-red-500/80 transition disabled:opacity-60">
-                        Upload
+                        Upload image
                     </button>
                 </form>
             </div>
@@ -101,13 +105,12 @@ sort($availableTypes);
     </div>
 <?php endif; ?>
 
-<?php if (empty($media)): ?>
-        <div class="card text-sm text-muted">
-            <p>No assets uploaded yet. Upload images from any editor form to populate the media library.</p>
-        </div>
-    <?php else: ?>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <?php foreach ($media as $item): ?>
+    <div class="card text-sm text-muted <?= !empty($media) ? 'hidden' : '' ?>" data-media-empty>
+        <p>No assets uploaded yet. Upload images from any editor form to populate the media library.</p>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 <?= empty($media) ? 'hidden' : '' ?>" data-media-grid>
+        <?php foreach ($media as $item): ?>
                 <?php
                 $isImage = in_array($item['type'], ['png', 'jpg', 'jpeg', 'webp', 'svg', 'gif', 'ico'], true);
                 $url = htmlspecialchars($item['url'], ENT_QUOTES, 'UTF-8');
@@ -117,21 +120,46 @@ sort($availableTypes);
                 $typeAttr = htmlspecialchars($item['type'], ENT_QUOTES, 'UTF-8');
                 $variants = isset($item['variants']) && is_array($item['variants']) ? $item['variants'] : [];
                 $variantTypesAttr = htmlspecialchars(implode(',', array_keys($variants)), ENT_QUOTES, 'UTF-8');
+                $width = isset($item['width']) ? (int)$item['width'] : null;
+                $height = isset($item['height']) ? (int)$item['height'] : null;
+                $dimensions = ($width && $height)
+                    ? sprintf('W %d &times; H %d px', $width, $height)
+                    : 'W n/a &times; H n/a px';
+                $inUse = !empty($item['in_use']);
                 ?>
-                <article class="card space-y-3" data-media-card data-media-type="<?= $typeAttr ?>" data-media-variants="<?= $variantTypesAttr ?>">
-                    <div class="bg-bg2 border border-stroke rounded-lg overflow-hidden aspect-video flex items-center justify-center">
+                <article
+                    class="media-card card space-y-3"
+                    data-media-card
+                    data-media-type="<?= $typeAttr ?>"
+                    data-media-variants="<?= $variantTypesAttr ?>"
+                    data-media-path="<?= $path ?>"
+                    data-media-url="<?= $url ?>"
+                    data-media-width="<?= $width !== null ? (string)$width : '' ?>"
+                    data-media-height="<?= $height !== null ? (string)$height : '' ?>"
+                    data-media-in-use="<?= $inUse ? '1' : '0' ?>"
+                >
+                    <div class="media-card__thumb bg-bg2 border border-stroke rounded-lg overflow-hidden aspect-video flex items-center justify-center">
                         <?php if ($isImage): ?>
-                            <img src="<?= $url ?>" alt="<?= $path ?>" class="max-h-full max-w-full object-contain">
+                            <img src="<?= $url ?>" alt="<?= $path ?>" class="max-h-full max-w-full object-contain media-card__image">
                         <?php else: ?>
                             <span class="text-xs text-muted uppercase tracking-wide"><?= strtoupper($item['type']) ?></span>
                         <?php endif; ?>
                     </div>
-                    <div class="space-y-1">
-                        <p class="text-sm font-semibold text-acc break-all"><?= $path ?></p>
-                        <p class="text-xs text-muted"><?= $size ?> &middot; Updated <?= $modified ?></p>
+                    <div class="space-y-2">
+                        <p class="media-card__path text-sm font-semibold text-acc break-all"><?= $path ?></p>
+                        <div class="media-card__meta text-xs text-muted space-y-1">
+                            <p class="media-card__dimensions"><?= $dimensions ?></p>
+                            <p><?= $size ?> &middot; Updated <?= $modified ?></p>
+                        </div>
+                        <div class="media-card__status flex items-center gap-2 text-xs">
+                            <span class="media-card__badge <?= $inUse ? 'media-card__badge--used' : 'media-card__badge--unused' ?>" data-media-inuse-label>
+                                <span class="media-card__badge-dot"></span>
+                                <?= $inUse ? 'In use' : 'Not in use' ?>
+                            </span>
+                        </div>
                     </div>
                     <?php if (!empty($variants)): ?>
-                        <div class="flex flex-wrap gap-2 text-xs" data-media-variant-list>
+                        <div class="flex flex-wrap gap-2 text-xs media-card__variants" data-media-variant-list>
                             <?php foreach ($variants as $variantType => $variant): ?>
                                 <?php
                                 $variantUrl = htmlspecialchars($variant['url'], ENT_QUOTES, 'UTF-8');
@@ -147,14 +175,15 @@ sort($availableTypes);
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
-                    <div class="flex items-center gap-3 text-sm">
-                        <a href="<?= $url ?>" target="_blank" rel="noopener" class="text-cy hover:underline">Open</a>
-                        <button type="button" class="text-muted hover:text-acc transition" data-copy-url="<?= $url ?>">
-                            Copy URL
-                        </button>
+                    <div class="media-card__actions flex flex-wrap items-center gap-2 text-sm">
+                        <a href="<?= $url ?>" target="_blank" rel="noopener" class="media-card__action">Open</a>
+                        <button type="button" class="media-card__action" data-copy-url="<?= $url ?>">Copy URL</button>
+                        <button type="button" class="media-card__action" data-media-replace>Replace</button>
+                        <button type="button" class="media-card__action danger" data-media-delete>Delete</button>
+                        <input type="file" accept=".png,.jpg,.jpeg,.webp,.svg,.ico" class="hidden" data-media-replace-input>
                     </div>
                 </article>
             <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+        <?php endforeach; ?>
+    </div>
 </section>

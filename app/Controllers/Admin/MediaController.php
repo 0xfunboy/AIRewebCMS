@@ -14,6 +14,18 @@ use App\Support\Uploads;
 
 final class MediaController extends Controller
 {
+    /** @var array<string,array{primary:string,columns:string[]}> */
+    private array $referenceMap = [
+        'partners' => ['primary' => 'id', 'columns' => ['logo_url', 'badge_logo_url']],
+        'agents' => ['primary' => 'id', 'columns' => ['image_url']],
+        'team_members' => ['primary' => 'id', 'columns' => ['avatar_url']],
+        'social_proof_items' => ['primary' => 'id', 'columns' => ['author_avatar_url']],
+        'blog_posts' => ['primary' => 'id', 'columns' => ['image_url']],
+    ];
+
+    /** @var array<string,bool>|null */
+    private ?array $referenceCache = null;
+
     public function index(): void
     {
         $library = $this->gatherMedia();
@@ -107,6 +119,86 @@ final class MediaController extends Controller
         }
     }
 
+    public function listing(): void
+    {
+        Response::json([
+            'ok' => true,
+            'media' => $this->gatherMedia(),
+        ]);
+    }
+
+    public function delete(): void
+    {
+        $this->assertValidCsrf($_POST['csrf_token'] ?? null);
+        $path = (string)($_POST['path'] ?? '');
+        $relative = $this->normalizeRelativePath($path);
+        if ($relative === null) {
+            $this->respond(['error' => 'Invalid media path.'], false, 'Invalid media path.', 422);
+        }
+
+        if ($this->isMediaReferenced($relative)) {
+            $this->respond(['error' => 'This media asset is still referenced. Update references before deleting.'], false, 'Asset still in use.', 409);
+        }
+
+        $absolute = dirname(__DIR__, 3) . '/public/' . $relative;
+        if (!is_file($absolute)) {
+            $this->respond(['error' => 'File not found on disk.'], false, 'File not found.', 404);
+        }
+
+        $this->removeFileSet($absolute);
+        $this->referenceCache = null;
+
+        Response::json([
+            'ok' => true,
+            'message' => 'Media removed.',
+        ]);
+    }
+
+    public function replace(): void
+    {
+        $this->assertValidCsrf($_POST['csrf_token'] ?? null);
+
+        $path = (string)($_POST['path'] ?? '');
+        $relative = $this->normalizeRelativePath($path);
+        if ($relative === null) {
+            $this->respond(['error' => 'Invalid media path.'], false, 'Invalid media path.', 422);
+        }
+
+        if (!isset($_FILES['file']) || ($_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            $this->respond(['error' => 'Select a file to upload.'], false, 'Select a file to upload.', 422);
+        }
+
+        $absoluteOld = dirname(__DIR__, 3) . '/public/' . $relative;
+        if (!is_file($absoluteOld)) {
+            $this->respond(['error' => 'Existing file not found.'], false, 'Existing file not found.', 404);
+        }
+
+        try {
+            $result = Uploads::overwrite($_FILES['file'], $relative);
+            $this->referenceCache = null;
+
+            $variantsPayload = [];
+            foreach ($result['variants'] as $format => $variantInfo) {
+                $variantsPayload[$format] = [
+                    'path' => Media::normalizeMediaPath($variantInfo['path']),
+                    'width' => $variantInfo['width'],
+                    'height' => $variantInfo['height'],
+                ];
+            }
+
+            Response::json([
+                'ok' => true,
+                'message' => 'Media replaced.',
+                'path' => Media::normalizeMediaPath($relative),
+                'width' => $result['width'],
+                'height' => $result['height'],
+                'variants' => $variantsPayload,
+            ]);
+        } catch (\Throwable $e) {
+            $this->respond(['error' => $e->getMessage()], false, 'Replace operation failed.', 400);
+        }
+    }
+
     /**
      * @return array<int, array{
      *     path:string,
@@ -152,12 +244,15 @@ final class MediaController extends Controller
                     'url' => $item['url'],
                     'size' => $item['size'],
                     'modified' => $item['modified'],
+                    'width' => $item['width'],
+                    'height' => $item['height'],
                 ];
             }
 
             unset($primary['group']);
             $primary['variants'] = $variants;
             $primary['modified'] = $latestModified;
+            $primary['in_use'] = $this->isMediaReferenced($primary['path']);
             $result[] = $primary;
         }
 
@@ -202,6 +297,16 @@ final class MediaController extends Controller
                 $groupPath = substr($groupPath, 0, $dotPos);
             }
 
+            $width = null;
+            $height = null;
+            if (in_array($extension, ['png', 'jpg', 'jpeg', 'webp', 'gif'], true)) {
+                $info = @getimagesize($path);
+                if ($info) {
+                    $width = (int)$info[0];
+                    $height = (int)$info[1];
+                }
+            }
+
             $files[] = [
                 'path' => $relativePath,
                 'url' => '/' . $relativePath,
@@ -209,6 +314,8 @@ final class MediaController extends Controller
                 'modified' => filemtime($path) ?: 0,
                 'type' => $extension,
                 'group' => $groupPath,
+                'width' => $width,
+                'height' => $height,
             ];
         }
     }
@@ -254,6 +361,133 @@ final class MediaController extends Controller
         }
 
         $this->respond([], false, 'Invalid CSRF token.', 403);
+    }
+
+    private function buildStep(int $phase, int $current, int $total, string $message, string $status = 'ok'): array
+    {
+        return [
+            'phase' => $phase,
+            'current' => $current,
+            'total' => max(1, $total),
+            'message' => $message,
+            'status' => $status,
+        ];
+    }
+
+    private function normalizeRelativePath(string $value): ?string
+    {
+        $trimmed = trim(str_replace('\\', '/', $value));
+        if ($trimmed === '') {
+            return null;
+        }
+        if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
+            return null;
+        }
+        $trimmed = ltrim($trimmed, '/');
+        if (!str_starts_with($trimmed, 'media/')) {
+            return null;
+        }
+        return $trimmed;
+    }
+
+    private function getReferencedMedia(): array
+    {
+        if ($this->referenceCache !== null) {
+            return $this->referenceCache;
+        }
+
+        $db = Database::connection();
+        $map = [];
+
+        $settings = $db->query("SELECT setting_value FROM settings WHERE setting_value LIKE '/media/%' OR setting_value LIKE 'media/%'");
+        if ($settings) {
+            foreach ($settings->fetchAll(\PDO::FETCH_COLUMN) as $value) {
+                $normalized = $this->normalizeRelativePath((string)$value);
+                if ($normalized !== null) {
+                    $map[$normalized] = true;
+                }
+            }
+        }
+
+        foreach ($this->referenceMap as $table => $meta) {
+            foreach ($meta['columns'] as $column) {
+                $sql = sprintf(
+                    "SELECT %s AS value FROM %s WHERE %s LIKE '/media/%%' OR %s LIKE 'media/%%'",
+                    $column,
+                    $table,
+                    $column,
+                    $column
+                );
+                $stmt = $db->query($sql);
+                if (!$stmt) {
+                    continue;
+                }
+                foreach ($stmt->fetchAll(\PDO::FETCH_COLUMN) as $value) {
+                    $normalized = $this->normalizeRelativePath((string)$value);
+                    if ($normalized !== null) {
+                        $map[$normalized] = true;
+                    }
+                }
+            }
+        }
+
+        return $this->referenceCache = $map;
+    }
+
+    private function isMediaReferenced(string $relativePath): bool
+    {
+        $normalized = $this->normalizeRelativePath($relativePath);
+        if ($normalized === null) {
+            return false;
+        }
+
+        $references = $this->getReferencedMedia();
+        return isset($references[$normalized]);
+    }
+
+    private function removeFileSet(string $absolutePath): void
+    {
+        if (is_file($absolutePath)) {
+            @unlink($absolutePath);
+        }
+
+        $base = preg_replace('/\\.[^.]+$/', '', $absolutePath);
+        if (!$base) {
+            return;
+        }
+
+        foreach (glob($base . '.*') ?: [] as $candidate) {
+            if (is_file($candidate)) {
+                @unlink($candidate);
+            }
+        }
+    }
+
+    private function updateReferences(string $oldRelative, string $newRelative): void
+    {
+        $db = Database::connection();
+
+        $oldNormalized = $this->normalizeRelativePath($oldRelative);
+        $newNormalized = $this->normalizeRelativePath($newRelative);
+        if ($oldNormalized === null || $newNormalized === null) {
+            return;
+        }
+
+        $oldFull = '/' . $oldNormalized;
+        $newFull = '/' . $newNormalized;
+
+        $stmt = $db->prepare('UPDATE settings SET setting_value = :new WHERE setting_value = :old');
+        $stmt->execute(['new' => $newFull, 'old' => $oldFull]);
+        $stmt->execute(['new' => $newNormalized, 'old' => $oldNormalized]);
+
+        foreach ($this->referenceMap as $table => $meta) {
+            foreach ($meta['columns'] as $column) {
+                $sql = sprintf('UPDATE %s SET %s = :new WHERE %s = :old', $table, $column, $column);
+                $statement = $db->prepare($sql);
+                $statement->execute(['new' => $newFull, 'old' => $oldFull]);
+                $statement->execute(['new' => $newNormalized, 'old' => $oldNormalized]);
+            }
+        }
     }
 
     private function respond(array $payload, bool $success, string $message, int $statusCode = 200): void

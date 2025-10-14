@@ -5,7 +5,8 @@ A lightweight PHP + MySQL CMS powering the AIRewardrop agent website. The system
 ## Features
 - **Wallet-based admin login** using WalletConnect v2 with nonce validation and session tracking.
 - **Modular admin dashboard** covering Products, Agents, Partners, Team, Blog Posts, Social Proof, Roadmap (phases + tracks), and global Settings.
-- **Media library explorer & optimizer** with filters, progress logging, clipboard copy, and awareness of SVG→PNG/WebP variants alongside tools to mirror remote assets and batch-convert the library inside `public/media/`.
+- **Media library explorer & optimizer** with filters, in-use badges, WebP conversion logs, safe same-URL replace/delete actions, and a reusable media picker that powers every upload field.
+- **English-first admin UI** with consistent copy and helper controls (read-only media URLs, Copy/Upload image/Select from media buttons).
 - **Public site pages** rendered through PHP templates that mirror the original Tailwind-styled marketing content.
 - **Installer seeding**: the setup wizard (`public/install.php`) runs the schema and populates starter content from `database/seed-data.php` one time.
 - **MySQL migrations** in `database/schema.sql` aligned with the CMS features (admins, sessions, content tables, etc.).
@@ -65,14 +66,14 @@ Duplicate `.env.example.php` and tailor the following keys:
    ```bash
    mysql -u aire_user -p aireweb < database/schema.sql
    ```
-5. (Facoltativo) per importare i seed legacy TypeScript esegui: `php scripts/import.php`.
-6. **Configura gli admin abilitati**
-   - Apri `.env.php` e imposta l'array `wallet.allowed_addresses` con gli indirizzi wallet che dovranno autenticarsi.
-   - Durante l'installazione questi indirizzi vengono inseriti nella tabella `admins` come record iniziali.
-7. **Wizard di installazione (una sola volta)**
-   - Carica il progetto sul server e assicurati che `public/` sia la document root.
-   - Visita `https://tuodominio/install.php` e clicca “Avvia installazione”. Lo script crea tutte le tabelle, importa i seed (`database/seed-data.php`) e scrive `storage/install.lock`.
-   - Al termine elimina o rinomina `public/install.php` e, se desideri reinstallare, rimuovi `storage/install.lock`.
+5. *(Optional)* Import the legacy TypeScript seed data with `php scripts/import.php`.
+6. **Configure authorised admins**
+   - Open `.env.php` and populate `wallet.allowed_addresses` with the wallet addresses allowed to authenticate.
+   - The installer seeds those addresses into the `admins` table during its first run.
+7. **Run the installer (one time)**
+   - Deploy the project and ensure `public/` is the document root.
+   - Visit `https://your-domain/install.php` and click “Start installation”. The wizard creates the schema, imports `database/seed-data.php`, and writes `storage/install.lock`.
+   - When finished, delete or rename `public/install.php`. To rerun the installer later, remove `storage/install.lock`.
 
 8. **Serve the site**:
    - Local testing: `php -S 127.0.0.1:8000 -t public public/router.php`
@@ -81,7 +82,7 @@ Duplicate `.env.example.php` and tailor the following keys:
 ## Inline Admin Editing
 Authenticated admins see a toolbar on every public page:
 
-1. **Toggle Modalità Admin** – enables/disables the inline editing overlay (state stored in session).
+1. **Toggle Admin Mode** – enables or disables the inline editing overlay (state stored in session).
 2. **Editable elements** – when active, blocks marked with `data-model`, `data-key`, and optional `data-id` expose action buttons:
    - **Edit / Save / Cancel** for plain text.
    - **Edit HTML** opens a modal editor for rich text.
@@ -100,9 +101,10 @@ Authenticated admins see a toolbar on every public page:
    - Admin assets are loaded only when the user is authenticated, so regular visitors see the original markup untouched.
 
 ### Admin Media Library & Upload Fields
-- Every dashboard form that accepts logos, avatars, hero images, or social graphics uses a **media field** with live previews, manual URL entry, and optional file upload. Paths are normalised to begin with `/media/…` so they can be pasted directly into templates or inline editing.
-- The upload pipeline lives in `App\Support\Uploads`: all files are MIME sniffed, SVGs are sanitised, the original vector is retained, and PNG/WebP variants are produced whenever Imagick is available (otherwise the upload still succeeds without raster copies). Brand logos uploaded through Settings are automatically copied to `public/media/svg/logo/site-logo.<ext>` so frontend fallbacks remain consistent.
-- The Media Library grid now includes extension filters, variant pills (e.g. SVG + PNG/WebP), instant clipboard copy, and a streaming log under the action buttons. `Local Mirror Images` imports any remote URLs referenced in settings/content, while `Optimize to WebP` reports clear errors if Imagick/GD is unavailable so admins know the conversion was skipped.
+- Every dashboard form that accepts logos, avatars, hero images, or social graphics uses a unified **media field** with live preview, a read-only “Media URL” input, Copy URL helper, and action buttons for **Upload image** or **Select from media**. Submitted paths are normalised to `/media/...` so they can be pasted anywhere (inline editor, templates, API).
+- The upload pipeline lives in `App\Support\Uploads`: files are MIME sniffed, SVGs are sanitised, the original vector is retained, and PNG/WebP variants are produced whenever Imagick is available (otherwise the upload still succeeds without raster copies). The new `Uploads::overwrite()` helper performs atomic replacements that keep the canonical filename/URL intact and regenerate sibling variants safely.
+- The Media Library grid surfaces dimensions, file sizes, modified times, and an “In use/Not in use” badge. Cards expose Copy, Open, **Replace**, and **Delete** actions; deletion is blocked while references exist (HTTP 409), and replacements overwrite the same path before refreshing the grid in-place.
+- A reusable Media Picker modal powers the “Select from media” button: it fetches `GET /admin/media/list?format=json`, supports search/extension filters, and returns the selected `/media/...` path to the invoking field.
 - Default UI/brand assets ship with the repo under `public/media/svg/**` (editable) with version-controlled fallbacks in `public/assets/svg-default/**`. Use `App\Support\Media::assetSvg('path/to.svg')` to resolve the active media file with automatic fallback to the default copy.
 - The default favicon lives at `public/favicon.ico` (referenced via the `settings.favicon_path` key). Replace it through the Media Library or by dropping a new ICO file into `public/`.
 - Partners now expose two image slots: the standard **Partner Card Image** for the `/partners` page and a dedicated **Trusted Badge Logo** (monochrome/transparent) rendered in the homepage “Trusted By The Best” ribbon.

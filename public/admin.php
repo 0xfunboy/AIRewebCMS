@@ -74,6 +74,9 @@ $router->get('/admin/media', [MediaController::class, 'index'], [$requireAdmin])
 $router->post('/admin/media/mirror', [MediaController::class, 'mirror'], [$requireAdmin]);
 $router->post('/admin/media/optimize', [MediaController::class, 'optimize'], [$requireAdmin]);
 $router->post('/admin/media/upload', [MediaController::class, 'upload'], [$requireAdmin]);
+$router->get('/admin/media/list', [MediaController::class, 'listing'], [$requireAdmin]);
+$router->post('/admin/media/delete', [MediaController::class, 'delete'], [$requireAdmin]);
+$router->post('/admin/media/replace', [MediaController::class, 'replace'], [$requireAdmin]);
 
 $router->get('/admin/roadmap', [RoadmapController::class, 'index'], [$requireAdmin]);
 $router->get('/admin/roadmap/create', [RoadmapController::class, 'create'], [$requireAdmin]);

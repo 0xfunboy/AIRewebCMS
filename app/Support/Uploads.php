@@ -50,6 +50,153 @@ final class Uploads
         return self::processFile($path, $originalName, $nameHint, false, (int)$size);
     }
 
+    /**
+     * Overwrite an existing media file while keeping its canonical path.
+     *
+     * @return array{path:string,width:?int,height:?int,variants:array<string,array{path:string,width:int,height:int}>}
+     */
+    public static function overwrite(array $file, string $relativePath): array
+    {
+        if (!isset($file['tmp_name'], $file['error'], $file['size'])) {
+            throw new \RuntimeException('Invalid file upload payload.');
+        }
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            throw new \RuntimeException('Upload error: ' . self::errorMessage($file['error']));
+        }
+
+        $normalized = Media::normalizeMediaPath($relativePath);
+        if ($normalized === '' || !str_starts_with($normalized, '/media/')) {
+            throw new \RuntimeException('Only media library files can be replaced.');
+        }
+
+        $targetRelative = ltrim($normalized, '/');
+        $targetAbsolute = dirname(__DIR__, 2) . '/public/' . $targetRelative;
+        if (!is_file($targetAbsolute)) {
+            throw new \RuntimeException('Existing file not found on disk.');
+        }
+
+        $targetExt = strtolower(pathinfo($targetAbsolute, PATHINFO_EXTENSION));
+        if ($targetExt === '') {
+            throw new \RuntimeException('Unable to determine the target file type.');
+        }
+
+        $label = pathinfo($targetRelative, PATHINFO_FILENAME) ?: 'media';
+        $stored = self::store($file, $label);
+        $sourceRelative = $stored['path'];
+        $sourceAbsolute = dirname(__DIR__, 2) . '/public/' . ltrim($sourceRelative, '/');
+
+        if (!is_file($sourceAbsolute)) {
+            throw new \RuntimeException('Temporary upload missing from disk.');
+        }
+
+        $newExt = strtolower(pathinfo($sourceAbsolute, PATHINFO_EXTENSION));
+        if ($targetExt !== $newExt) {
+            @unlink($sourceAbsolute);
+            foreach ($stored['variants'] as $variant) {
+                $variantAbs = dirname(__DIR__, 2) . '/public/' . ltrim($variant['path'], '/');
+                @unlink($variantAbs);
+            }
+            throw new \RuntimeException('Replacement file must keep the original file type.');
+        }
+
+        $targetBase = preg_replace('/\.[^.]+$/', '', $targetAbsolute) ?: $targetAbsolute;
+        $existingVariantPaths = [];
+        foreach (glob($targetBase . '.*') ?: [] as $existing) {
+            if ($existing !== $targetAbsolute) {
+                $existingVariantPaths[$existing] = true;
+            }
+        }
+
+        $backupAbsolute = $targetAbsolute . '.bak';
+        $counter = 0;
+        while (file_exists($backupAbsolute)) {
+            $counter++;
+            $backupAbsolute = $targetAbsolute . '.bak' . $counter;
+        }
+
+        if (!@rename($targetAbsolute, $backupAbsolute)) {
+            @unlink($sourceAbsolute);
+            foreach ($stored['variants'] as $variant) {
+                $variantAbs = dirname(__DIR__, 2) . '/public/' . ltrim($variant['path'], '/');
+                @unlink($variantAbs);
+            }
+            throw new \RuntimeException('Unable to prepare existing file for replacement.');
+        }
+
+        $renamedVariants = [];
+        $variantSummaries = [];
+
+        try {
+            if (!@rename($sourceAbsolute, $targetAbsolute)) {
+                throw new \RuntimeException('Unable to write replacement file.');
+            }
+
+            foreach ($stored['variants'] as $variantFormat => $variant) {
+                $sourceVariantAbsolute = dirname(__DIR__, 2) . '/public/' . ltrim($variant['path'], '/');
+                if (!is_file($sourceVariantAbsolute)) {
+                    continue;
+                }
+                $ext = strtolower(pathinfo($sourceVariantAbsolute, PATHINFO_EXTENSION));
+                if ($ext === '') {
+                    @unlink($sourceVariantAbsolute);
+                    continue;
+                }
+                $targetVariantAbsolute = $targetBase . '.' . $ext;
+                if (!@rename($sourceVariantAbsolute, $targetVariantAbsolute)) {
+                    throw new \RuntimeException('Unable to write replacement variant.');
+                }
+                $renamedVariants[] = $targetVariantAbsolute;
+                $relativeVariant = ltrim(str_replace(dirname(__DIR__, 2) . '/public/', '', $targetVariantAbsolute), '/');
+                $variantSummaries[$variantFormat] = [
+                    'path' => $relativeVariant,
+                    'width' => $variant['width'],
+                    'height' => $variant['height'],
+                ];
+                unset($existingVariantPaths[$targetVariantAbsolute]);
+            }
+
+            foreach ($existingVariantPaths as $oldPath => $_) {
+                if (is_file($oldPath) && !in_array($oldPath, $renamedVariants, true)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            @unlink($backupAbsolute);
+
+            return [
+                'path' => $targetRelative,
+                'width' => $stored['width'],
+                'height' => $stored['height'],
+                'variants' => $variantSummaries,
+            ];
+        } catch (\Throwable $exception) {
+            foreach ($renamedVariants as $targetVariantAbsolute) {
+                if (is_file($targetVariantAbsolute)) {
+                    @unlink($targetVariantAbsolute);
+                }
+            }
+
+            foreach ($stored['variants'] as $variant) {
+                $variantAbs = dirname(__DIR__, 2) . '/public/' . ltrim($variant['path'], '/');
+                if (is_file($variantAbs)) {
+                    @unlink($variantAbs);
+                }
+            }
+
+            if (is_file($sourceAbsolute)) {
+                @unlink($sourceAbsolute);
+            }
+
+            if (is_file($targetAbsolute)) {
+                @unlink($targetAbsolute);
+            }
+
+            @rename($backupAbsolute, $targetAbsolute);
+            throw $exception;
+        }
+    }
+
     private static function isAllowedMime(string $mime, string $ext): bool
     {
         $mime = strtolower($mime);
