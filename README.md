@@ -66,12 +66,15 @@ Duplicate `.env.example.php` and tailor the following keys:
    mysql -u aire_user -p aireweb < database/schema.sql
    ```
 5. (Facoltativo) per importare i seed legacy TypeScript esegui: `php scripts/import.php`.
-6. **Wizard di installazione (una sola volta)**
+6. **Configura gli admin abilitati**
+   - Apri `.env.php` e imposta l'array `wallet.allowed_addresses` con gli indirizzi wallet che dovranno autenticarsi.
+   - Durante l'installazione questi indirizzi vengono inseriti nella tabella `admins` come record iniziali.
+7. **Wizard di installazione (una sola volta)**
    - Carica il progetto sul server e assicurati che `public/` sia la document root.
    - Visita `https://tuodominio/install.php` e clicca “Avvia installazione”. Lo script crea tutte le tabelle, importa i seed (`database/seed-data.php`) e scrive `storage/install.lock`.
    - Al termine elimina o rinomina `public/install.php` e, se desideri reinstallare, rimuovi `storage/install.lock`.
 
-7. **Serve the site**:
+8. **Serve the site**:
    - Local testing: `php -S 127.0.0.1:8000 -t public public/router.php`
    - Production: point your web server’s document root to the `public/` directory and ensure `public/router.php` handles requests.
 

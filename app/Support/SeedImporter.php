@@ -29,6 +29,7 @@ final class SeedImporter
 
         $pdo = Database::connection();
 
+        self::seedAdmins($pdo, $seed['admins'] ?? [], (array)(config('wallet.allowed_addresses', []) ?? []));
         self::seedSettings($pdo, $seed['settings'] ?? []);
         self::seedProducts($pdo, $seed['products'] ?? [], $seed['product_features'] ?? []);
         self::seedAgents($pdo, $seed['agents'] ?? []);
@@ -41,6 +42,68 @@ final class SeedImporter
         self::seedSocialProof($pdo, $seed['social_proof_items'] ?? []);
         self::seedFaq($pdo, $seed['faq_items'] ?? []);
         self::seedBlogPosts($pdo, $seed['blog_posts'] ?? []);
+    }
+
+    private static function seedAdmins(PDO $pdo, array $admins, array $allowedAddresses): void
+    {
+        $all = [];
+
+        foreach ($admins as $admin) {
+            if (!isset($admin['wallet_address'])) {
+                continue;
+            }
+            $all[] = [
+                'display_name' => $admin['display_name'] ?? 'Admin',
+                'wallet_address' => strtolower(trim((string)$admin['wallet_address'])),
+                'email' => $admin['email'] ?? null,
+            ];
+        }
+
+        foreach ($allowedAddresses as $address) {
+            $address = strtolower(trim((string)$address));
+            if ($address === '') {
+                continue;
+            }
+            $all[] = [
+                'display_name' => 'Admin',
+                'wallet_address' => $address,
+                'email' => null,
+            ];
+        }
+
+        if (!$all) {
+            return;
+        }
+
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS admins (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                display_name VARCHAR(100) NOT NULL,
+                wallet_address CHAR(42) NOT NULL UNIQUE,
+                email VARCHAR(150) NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO admins (display_name, wallet_address, email)
+             VALUES (:display_name, :wallet_address, :email)
+             ON DUPLICATE KEY UPDATE
+                display_name = VALUES(display_name),
+                email = VALUES(email)'
+        );
+
+        foreach ($all as $admin) {
+            if ($admin['wallet_address'] === '') {
+                continue;
+            }
+            $stmt->execute([
+                'display_name' => $admin['display_name'] ?: 'Admin',
+                'wallet_address' => $admin['wallet_address'],
+                'email' => $admin['email'],
+            ]);
+        }
     }
 
     private static function seedSettings(PDO $pdo, array $settings): void
