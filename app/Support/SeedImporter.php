@@ -44,6 +44,12 @@ final class SeedImporter
         self::seedBlogPosts($pdo, $seed['blog_posts'] ?? []);
     }
 
+    public static function seedAdminsFromAllowedAddresses(): void
+    {
+        $pdo = Database::connection();
+        self::seedAdmins($pdo, [], (array)(config('wallet.allowed_addresses', []) ?? []));
+    }
+
     private static function seedAdmins(PDO $pdo, array $admins, array $allowedAddresses): void
     {
         $all = [];

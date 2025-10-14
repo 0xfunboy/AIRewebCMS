@@ -1,19 +1,68 @@
+# === Rewrite & Routing ===
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    Options -MultiViews
 
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^admin($|/.*)$ admin.php [QSA,L]
+    # Serve direttamente file e directory esistenti
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
 
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+    # Area admin
+    RewriteRule ^admin(?:/.*)?$ admin.php [QSA,L]
+
+    # Front controller pubblico
     RewriteRule ^ index.php [QSA,L]
 </IfModule>
 
-<FilesMatch "\.(php|html)$">
-    <IfModule mod_headers.c>
-        Header always set X-Frame-Options "SAMEORIGIN"
-        Header always set X-Content-Type-Options "nosniff"
-        Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    </IfModule>
+# === Sicurezza base ===
+Options -Indexes
+
+# Blocca dotfiles, configurazioni e backup
+<FilesMatch "(^\.|\.env(\.php)?|composer\.(json|lock)|package(-lock)?\.json|pnpm-lock\.yaml|yarn\.lock|webpack.*|vite.*|Makefile|README.*|LICENSE|.*\.(sql|sqlite|bak|zip|tar|gz|tgz))$">
+    Require all denied
 </FilesMatch>
+
+# Blocca mappe sorgenti e markdown
+<FilesMatch "\.(map|md)$">
+    Require all denied
+</FilesMatch>
+
+# Impedisci esecuzione PHP nelle directory statiche / media
+<IfModule mod_php.c>
+    <FilesMatch "^assets/.*\.(php|phar|phtml)$">
+        Require all denied
+    </FilesMatch>
+    <FilesMatch "^media/.*\.(php|phar|phtml)$">
+        Require all denied
+    </FilesMatch>
+    <FilesMatch "^uploads/.*\.(php|phar|phtml)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+# Consenti solo metodi standard
+<LimitExcept GET POST HEAD>
+    Require all denied
+</LimitExcept>
+
+# === Security headers ===
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-Download-Options "noopen"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), bluetooth=()"
+    Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains; preload" env=HTTPS
+</IfModule>
+
+# === Caching statico ===
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType image/png "access plus 30 days"
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/webp "access plus 30 days"
+</IfModule>
