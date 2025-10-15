@@ -208,7 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fields = qsa(`[name^="${name}["]`, container);
                 let max = 0;
                 fields.forEach((field) => {
-                    const match = field.getAttribute('name')?.match(/\[(\d+)\]/);
+                    const nameAttr = field.getAttribute('name') || '';
+                    const match = nameAttr.match(/\[(\d+)\]/);
                     if (match) {
                         const value = parseInt(match[1], 10);
                         if (!Number.isNaN(value)) {
@@ -444,7 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         filterMedia() {
-            const term = (this.searchInput?.value || '').toLowerCase().trim();
+            const searchValue = this.searchInput ? this.searchInput.value : '';
+            const term = (searchValue || '').toLowerCase().trim();
             const filter = this.filterSelect ? this.filterSelect.value : 'all';
 
             return this.media.filter((item) => {
@@ -1099,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     await mediaLibrary.refresh();
                 } catch (error) {
                     console.error('Media action failed', error);
-                    const message = error?.message || 'Operation failed.';
+                    const message = (error && error.message) ? error.message : 'Operation failed.';
                     if (summary) {
                         summary.textContent = message;
                     }
@@ -1123,7 +1125,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initRepeaters();
 
     const mediaLibraryEl = qs('[data-media-library]');
-    const csrfToken = mediaLibraryEl?.getAttribute('data-csrf-token') || '';
+    const csrfToken =
+        mediaLibraryEl && mediaLibraryEl.getAttribute
+            ? mediaLibraryEl.getAttribute('data-csrf-token') || ''
+            : '';
 
     const mediaPicker = new MediaPicker({ fetchMedia: fetchMediaList });
 
