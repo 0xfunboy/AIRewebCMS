@@ -168,7 +168,7 @@ if ($isAdmin) {
                 }
             };
         </script>
-        <script type="module" src="/assets/admin/admin.js" defer></script>
+        <script src="/assets/js/admin.js?v=legacy-safe" defer></script>
     <?php endif; ?>
 </body>
 </html>

@@ -46,7 +46,7 @@ $adminSiteLogo = Media::siteLogoUrl($settings['site_logo'] ?? '');
         };
     </script>
     <link rel="stylesheet" href="/assets/css/admin.css">
-    <script type="module" src="/assets/js/admin.js" defer></script>
+    <script src="/assets/js/admin.js?v=legacy-safe" defer></script>
 </head>
 <body class="bg-bg text-txt min-h-screen flex">
     <?php View::renderPartial('partials/admin-sidebar', [
