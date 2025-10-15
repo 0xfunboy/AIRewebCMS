@@ -1,6 +1,17 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const qs = (selector, scope = document) => scope.querySelector(selector);
-    const qsa = (selector, scope = document) => Array.from(scope.querySelectorAll(selector));
+document.addEventListener('DOMContentLoaded', function adminInit() {
+    function qs(selector, scope) {
+        var context = scope || document;
+        return context ? context.querySelector(selector) : null;
+    }
+
+    function qsa(selector, scope) {
+        var context = scope || document;
+        if (!context) {
+            return [];
+        }
+        var nodeList = context.querySelectorAll(selector);
+        return Array.prototype.slice.call(nodeList);
+    }
 
     const ensureToaster = () => {
         let container = qs('.admin-toaster');
