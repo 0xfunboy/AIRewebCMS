@@ -210,7 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $messages[] = 'Schema del database applicato.';
             } catch (Throwable $e) {
-                $errors[] = 'Errore durante l\'esecuzione dello schema: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+                $errors[] = 'Error while running the schema: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
             }
         }
     }
@@ -226,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             \App\Support\SeedImporter::ensureSeeded();
             $messages[] = 'Seed di base completato.';
         } catch (Throwable $e) {
-            $errors[] = 'Errore durante il seed dei dati: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+            $errors[] = 'Error while seeding data: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
         }
     }
 
@@ -235,7 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             \App\Support\SeedImporter::seedAdminsFromAllowedAddresses();
             $messages[] = 'Wallet amministratori allineati con la configurazione attuale.';
         } catch (Throwable $e) {
-            $errors[] = 'Errore durante il seed degli admin: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+            $errors[] = 'Error while seeding admin accounts: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
         }
     }
 
@@ -401,12 +401,12 @@ function selected(string $value, string $current): string { return $value === $c
                 <label><input type="checkbox" name="actions[]" value="seed_admins"> Allinea wallet admin da configurazione</label>
                 <label><input type="checkbox" name="actions[]" value="reset_lock"> Rimuovi file install.lock</label>
             </div>
-            <p class="status">Seleziona una o più azioni dopo aver salvato le modifiche. Puoi eseguire l'installer in modo incrementale quante volte vuoi.</p>
+            <p class="status">Select one or more actions after saving changes. You can rerun the installer incrementally as many times as needed.</p>
         </fieldset>
 
         <div class="actions">
-            <button type="submit">Salva e applica</button>
-            <button type="button" class="secondary" onclick="window.location.reload()">Annulla</button>
+            <button type="submit">Save &amp; Apply</button>
+            <button type="button" class="secondary" onclick="window.location.reload()">Cancel</button>
         </div>
     </form>
 </div>

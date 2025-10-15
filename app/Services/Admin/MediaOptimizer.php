@@ -57,13 +57,16 @@ final class MediaOptimizer
     public function mirror(): array
     {
         $steps = [];
-        $phase = $this->mirrorRemoteAssets($steps);
+        $startedAt = microtime(true);
+        $summary = $this->mirrorRemoteAssets($steps);
 
         return [
             'steps' => $steps,
-            'processed' => $phase['processed'],
-            'total' => $phase['total'],
-            'errors' => $phase['errors'],
+            'processed' => $summary['processed'],
+            'total' => $summary['total'],
+            'errors' => $summary['errors'],
+            'warnings' => $summary['warnings'],
+            'duration_ms' => (int)round((microtime(true) - $startedAt) * 1000),
         ];
     }
 
@@ -75,6 +78,7 @@ final class MediaOptimizer
     public function optimize(): array
     {
         $steps = [];
+        $startedAt = microtime(true);
         $phase = $this->convertLocalImagesToWebp($steps);
 
         return [
@@ -82,6 +86,8 @@ final class MediaOptimizer
             'processed' => $phase['processed'],
             'total' => $phase['total'],
             'errors' => $phase['errors'],
+            'warnings' => $phase['warnings'],
+            'duration_ms' => (int)round((microtime(true) - $startedAt) * 1000),
         ];
     }
 
@@ -93,32 +99,45 @@ final class MediaOptimizer
     {
         $tasks = $this->collectRemoteReferences();
         $total = count($tasks);
+
+        if ($total === 0) {
+            return [
+                'processed' => 0,
+                'total' => 0,
+                'errors' => 0,
+                'warnings' => 0,
+            ];
+        }
+
         $processed = 0;
         $errors = 0;
-
+        $warnings = 0;
         $counter = 0;
+
         foreach ($tasks as $task) {
             $counter++;
 
             try {
-                $newPath = $this->downloadRemoteAsset($task);
-                if ($newPath !== null) {
-                    $processed++;
+                $result = $this->downloadRemoteAsset($task);
+                if ($result === null) {
+                    $warnings++;
                     $steps[] = $this->buildStep(
                         1,
                         $counter,
                         $total,
-                        sprintf('Mirrored %s', $task['label'])
-                    );
-                } else {
-                    $steps[] = $this->buildStep(
-                        1,
-                        $counter,
-                        $total,
-                        sprintf('Skipped %s (already local)', $task['label']),
+                        sprintf('Skipped %s', $task['label']),
                         'skip'
                     );
+                    continue;
                 }
+
+                $processed++;
+                $steps[] = $this->buildStep(
+                    1,
+                    $counter,
+                    $total,
+                    sprintf('Mirrored %s', $task['label'])
+                );
             } catch (\Throwable $e) {
                 $errors++;
                 $steps[] = $this->buildStep(
@@ -135,6 +154,7 @@ final class MediaOptimizer
             'processed' => $processed,
             'total' => $total,
             'errors' => $errors,
+            'warnings' => $warnings,
         ];
     }
 
@@ -149,6 +169,7 @@ final class MediaOptimizer
                 'processed' => 0,
                 'total' => 0,
                 'errors' => 0,
+                'warnings' => 0,
             ];
         }
 
@@ -179,6 +200,7 @@ final class MediaOptimizer
         $processed = 0;
         $errors = 0;
         $counter = 0;
+        $warnings = 0;
 
         foreach ($files as $path) {
             $counter++;
@@ -188,6 +210,7 @@ final class MediaOptimizer
             try {
                 $result = $this->convertFileToWebp($path);
                 if ($result === null) {
+                    $warnings++;
                     $steps[] = $this->buildStep(
                         2,
                         $counter,
@@ -224,6 +247,7 @@ final class MediaOptimizer
             'processed' => $processed,
             'total' => $total,
             'errors' => $errors,
+            'warnings' => $warnings,
         ];
     }
 
@@ -234,22 +258,17 @@ final class MediaOptimizer
     {
         $tasks = [];
 
-        $settingsStmt = $this->db->query(
-            "SELECT setting_key, setting_value FROM settings
-             WHERE setting_value LIKE 'http%' AND (
-                setting_key LIKE '%image%' OR
-                setting_key LIKE '%logo%' OR
-                setting_key LIKE '%icon%' OR
-                setting_key LIKE '%favicon%'
-             )"
-        );
-
+        $settingsStmt = $this->db->query('SELECT setting_key, setting_value FROM settings');
         if ($settingsStmt) {
             foreach ($settingsStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $url = $this->normalizeRemoteUrl((string)$row['setting_value']);
+                if ($url === null) {
+                    continue;
+                }
                 $tasks[] = [
                     'table' => 'settings',
                     'key' => $row['setting_key'],
-                    'value' => $row['setting_value'],
+                    'value' => $url,
                     'label' => sprintf('settings.%s', $row['setting_key']),
                 ];
             }
@@ -258,17 +277,22 @@ final class MediaOptimizer
         foreach ($this->tableMap as $table => $meta) {
             $primary = $meta['primary'];
             foreach ($meta['columns'] as $column) {
-                $stmt = $this->db->prepare("SELECT {$primary} AS id, {$column} AS url FROM {$table} WHERE {$column} LIKE 'http%'");
-                $stmt->execute();
+                $stmt = $this->db->query(
+                    sprintf('SELECT %s AS id, %s AS url FROM %s', $primary, $column, $table)
+                );
+                if (!$stmt) {
+                    continue;
+                }
                 foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                    if (empty($row['url'])) {
+                    $url = $this->normalizeRemoteUrl((string)$row['url']);
+                    if ($url === null) {
                         continue;
                     }
                     $tasks[] = [
                         'table' => $table,
                         'id' => (int)$row['id'],
                         'column' => $column,
-                        'value' => $row['url'],
+                        'value' => $url,
                         'label' => sprintf('%s#%d.%s', $table, (int)$row['id'], $column),
                     ];
                 }
@@ -284,25 +308,13 @@ final class MediaOptimizer
     private function downloadRemoteAsset(array $task): ?string
     {
         $url = $task['value'];
-        if (!str_starts_with($url, 'http://') && !str_starts_with($url, 'https://')) {
+        if ($url === '' || $this->isLocalMediaPath($url)) {
             return null;
         }
 
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 10,
-                'follow_location' => 1,
-            ],
-        ]);
-
-        $contents = @file_get_contents($url, false, $context);
-        if ($contents === false) {
+        $tmp = $this->downloadToTempFile($url);
+        if ($tmp === null) {
             throw new \RuntimeException('Unable to download remote asset.');
-        }
-
-        $tmp = tempnam(sys_get_temp_dir(), 'media');
-        if ($tmp === false || file_put_contents($tmp, $contents) === false) {
-            throw new \RuntimeException('Unable to write temporary file.');
         }
 
         try {
@@ -316,6 +328,77 @@ final class MediaOptimizer
         $this->updateReference($task, $newPath);
 
         return $newPath;
+    }
+
+    private function downloadToTempFile(string $url): ?string
+    {
+        if (!function_exists('curl_init')) {
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 25,
+                    'follow_location' => 1,
+                    'max_redirects' => 5,
+                    'user_agent' => 'AIRewebCMS/1.0 MediaMirror',
+                ],
+            ]);
+
+            $contents = @file_get_contents($url, false, $context);
+            if ($contents === false) {
+                return null;
+            }
+
+            $tmp = tempnam(sys_get_temp_dir(), 'media');
+            if ($tmp === false) {
+                return null;
+            }
+
+            if (file_put_contents($tmp, $contents) === false) {
+                @unlink($tmp);
+                return null;
+            }
+
+            return $tmp;
+        }
+
+        $handle = curl_init($url);
+        if ($handle === false) {
+            return null;
+        }
+
+        $tmp = tempnam(sys_get_temp_dir(), 'media');
+        if ($tmp === false) {
+            curl_close($handle);
+            return null;
+        }
+
+        $file = fopen($tmp, 'wb');
+        if ($file === false) {
+            curl_close($handle);
+            @unlink($tmp);
+            return null;
+        }
+
+        curl_setopt_array($handle, [
+            CURLOPT_FILE => $file,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 25,
+            CURLOPT_USERAGENT => 'AIRewebCMS/1.0 MediaMirror',
+            CURLOPT_FAILONERROR => true,
+        ]);
+
+        $success = curl_exec($handle);
+        $error = curl_error($handle);
+        curl_close($handle);
+        fclose($file);
+
+        if ($success === false) {
+            @unlink($tmp);
+            throw new \RuntimeException($error !== '' ? $error : 'Download failed.');
+        }
+
+        return $tmp;
     }
 
     /**
@@ -457,10 +540,38 @@ final class MediaOptimizer
     {
         return [
             'phase' => $phase,
-            'current' => $current,
+            'current' => max(1, $current),
             'total' => max(1, $total),
             'message' => $message,
             'status' => $status,
         ];
+    }
+
+    private function normalizeRemoteUrl(string $value): ?string
+    {
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if ($this->isLocalMediaPath($trimmed)) {
+            return null;
+        }
+
+        if (preg_match('#^https?://#i', $trimmed) === 1) {
+            return $trimmed;
+        }
+
+        if (str_starts_with($trimmed, '//')) {
+            return 'https:' . $trimmed;
+        }
+
+        return null;
+    }
+
+    private function isLocalMediaPath(string $value): bool
+    {
+        $normalized = Media::normalizeMediaPath($value);
+        return str_starts_with($normalized, '/media/');
     }
 }
