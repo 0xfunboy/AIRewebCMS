@@ -371,18 +371,46 @@ document.addEventListener('DOMContentLoaded', function () {
         xhr.send(null);
     }
 
+    function parseJsonSafely(text) {
+        if (!text) {
+            return {};
+        }
+        try {
+            return JSON.parse(text);
+        } catch (err) {
+            return null;
+        }
+    }
+
     function postForm(url, formData, callback) {
+        if (window.fetch) {
+            fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' },
+                body: formData
+            }).then(function (response) {
+                return response.text().then(function (text) {
+                    var data = parseJsonSafely(text);
+                    if (response.ok) {
+                        callback(null, data || {});
+                    } else {
+                        callback(data || { error: 'Request failed', status: response.status });
+                    }
+                });
+            }).catch(function (error) {
+                callback({ error: error && error.message ? error.message : 'Network error' });
+            });
+            return;
+        }
+
         var xhr = new XMLHttpRequest();
         xhr.open('POST', url, true);
+        xhr.withCredentials = true;
         xhr.setRequestHeader('Accept', 'application/json');
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
-                var data = null;
-                try {
-                    data = xhr.responseText ? JSON.parse(xhr.responseText) : {};
-                } catch (err) {
-                    data = null;
-                }
+                var data = parseJsonSafely(xhr.responseText);
                 if (xhr.status >= 200 && xhr.status < 300) {
                     callback(null, data || {});
                 } else {
@@ -394,18 +422,38 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function postJson(url, payload, callback) {
+        if (window.fetch) {
+            fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            }).then(function (response) {
+                return response.text().then(function (text) {
+                    var data = parseJsonSafely(text);
+                    if (response.ok) {
+                        callback(null, data || {});
+                    } else {
+                        callback(data || { error: 'Request failed', status: response.status });
+                    }
+                });
+            }).catch(function (error) {
+                callback({ error: error && error.message ? error.message : 'Network error' });
+            });
+            return;
+        }
+
         var xhr = new XMLHttpRequest();
         xhr.open('POST', url, true);
+        xhr.withCredentials = true;
         xhr.setRequestHeader('Accept', 'application/json');
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
-                var data = null;
-                try {
-                    data = xhr.responseText ? JSON.parse(xhr.responseText) : {};
-                } catch (err) {
-                    data = null;
-                }
+                var data = parseJsonSafely(xhr.responseText);
                 if (xhr.status >= 200 && xhr.status < 300) {
                     callback(null, data || {});
                 } else {
