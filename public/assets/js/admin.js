@@ -168,6 +168,18 @@ document.addEventListener('DOMContentLoaded', function () {
             ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
     }
 
+    function toNumber(value, fallback) {
+        var number = Number(value);
+        return isFinite(number) ? number : (typeof fallback === 'number' ? fallback : 0);
+    }
+
+    function safeMessage(value, fallback) {
+        if (typeof value === 'string' && value.trim()) {
+            return value.trim();
+        }
+        return typeof fallback === 'string' ? fallback : '';
+    }
+
     function isImageType(type) {
         var value = (type || '').toLowerCase();
         return value === 'png' || value === 'jpg' || value === 'jpeg' || value === 'webp' || value === 'svg' || value === 'gif' || value === 'ico';
@@ -1223,8 +1235,18 @@ document.addEventListener('DOMContentLoaded', function () {
                         return;
                     }
 
+                    var payload = (data && typeof data === 'object') ? data : {};
+                    if (payload.ok === false) {
+                        var failureMessage = safeMessage(payload.error || payload.message, 'Operation failed.');
+                        if (summary) {
+                            summary.textContent = failureMessage;
+                        }
+                        showToast(failureMessage, 'error');
+                        return;
+                    }
+
                     if (logList) {
-                        var steps = Array.isArray(data.steps) ? data.steps : [];
+                        var steps = Array.isArray(payload.steps) ? payload.steps : [];
                         logList.innerHTML = '';
                         steps.forEach(function (step) {
                             var item = document.createElement('li');
@@ -1239,18 +1261,22 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
                     if (summary) {
-                        if (data.message) {
-                            summary.textContent = data.message;
-                        } else if (action === 'mirror') {
-                            summary.textContent = 'Mirrored ' + data.processed + '/' + data.total + ' assets (errors: ' + data.errors + ').';
+                        var processed = toNumber(payload.processed, 0);
+                        var total = toNumber(payload.total, 0);
+                        var errorCount = toNumber(payload.errors, 0);
+                        var fallbackMessage;
+                        if (action === 'mirror') {
+                            fallbackMessage = 'Mirrored ' + processed + '/' + total + ' assets (errors: ' + errorCount + ').';
                         } else if (action === 'upload') {
-                            summary.textContent = 'Upload complete.';
+                            fallbackMessage = 'Upload complete.';
                         } else {
-                            summary.textContent = 'Converted ' + data.processed + '/' + data.total + ' files to WebP (errors: ' + data.errors + ').';
+                            fallbackMessage = 'Converted ' + processed + '/' + total + ' files to WebP (errors: ' + errorCount + ').';
                         }
+                        summary.textContent = safeMessage(payload.message, fallbackMessage);
                     }
 
-                    showToast(data.message || (action === 'upload' ? 'Upload complete.' : 'Media task finished.'));
+                    var toastMessage = safeMessage(payload.message, action === 'upload' ? 'Upload complete.' : 'Media task finished.');
+                    showToast(toastMessage);
                     if (mediaLibrary && typeof mediaLibrary.refresh === 'function') {
                         mediaLibrary.refresh();
                     }
