@@ -184,6 +184,5 @@ sort($availableTypes);
                     </div>
                 </article>
             <?php endforeach; ?>
-        <?php endforeach; ?>
     </div>
 </section>
