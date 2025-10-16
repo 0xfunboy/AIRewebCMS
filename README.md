@@ -139,7 +139,7 @@ The public hero and social preview image default to `/media/svg/hero/hero-defaul
 - **Optimize to WebP** (`POST /admin/media/optimize`) walks `public/media`, converts raster files to WebP via Imagick or GD (with graceful error messages when support is missing), updates references to the new asset, and uses the same summary contract (`action: "optimize"`) with warnings for skipped files.
 - **Replace media** keeps URLs stable by staging uploads as `filename.ext.tmp`, swapping them into place atomically, regenerating variant siblings, and rolling back cleanly if any step fails.
 - **Delete media** scans all known tables before unlinking files. References trigger HTTP 409 responses so accidental removals are prevented.
-- Admin JS is cache-busted with `/assets/js/admin.js?v=20251015`—after deployments purge Cloudflare (or other CDN caches) to guarantee clients receive the latest bundle.
+- Admin JS is cache-busted with `/assets/js/admin.js?v=20251016`—after deployments purge Cloudflare (or other CDN caches) to guarantee clients receive the latest bundle.
 
 ## Usage
 - Visit `/login` to access the admin area. Configure the allowed wallet addresses in `.env.php`.
