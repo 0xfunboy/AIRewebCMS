@@ -18,40 +18,81 @@ if ($siteLogoUrl === '') {
             <span>Admin</span>
         </a>
     </div>
-    <nav class="flex-1 px-4 py-6 space-y-2 text-sm">
-        <a href="/admin/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
-            <span class="text-muted">Dashboard</span>
-        </a>
-        <a href="/admin/products" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
-            <span class="text-muted">Products</span>
-        </a>
-        <a href="/admin/agents" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
-            <span class="text-muted">Agents</span>
-        </a>
-        <a href="/admin/partners" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
-            <span class="text-muted">Partners</span>
-        </a>
-        <a href="/admin/social-proof" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
-            <span class="text-muted">Social Proof</span>
-        </a>
-        <a href="/admin/media" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
-            <span class="text-muted">Media Library</span>
-        </a>
-        <a href="/admin/posts" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
-            <span class="text-muted">Posts</span>
-        </a>
-        <a href="/admin/roadmap" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
-            <span class="text-muted">Roadmap</span>
-        </a>
-        <a href="/admin/team" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
-            <span class="text-muted">Team</span>
-        </a>
-        <a href="/admin/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
-            <span class="text-muted">Settings</span>
-        </a>
-        <a href="/" target="_blank" rel="noopener" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
-            <span class="text-muted">Open Site Preview</span>
-        </a>
+    <nav class="flex-1 px-4 py-6 space-y-6 text-sm">
+        <div class="space-y-2">
+            <p class="text-xs uppercase tracking-wide text-muted/80">Overview</p>
+            <a href="/admin/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Dashboard</span>
+            </a>
+        </div>
+
+        <div class="space-y-2">
+            <p class="text-xs uppercase tracking-wide text-muted/80">Product Stack</p>
+            <a href="/admin/products" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Products</span>
+            </a>
+            <a href="/admin/agents" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Agents</span>
+            </a>
+            <a href="/admin/roadmap" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Roadmap</span>
+            </a>
+            <a href="/admin/case-studies" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Case Studies</span>
+            </a>
+            <a href="/admin/partners" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Partners</span>
+            </a>
+        </div>
+
+        <div class="space-y-2">
+            <p class="text-xs uppercase tracking-wide text-muted/80">Company &amp; Trust</p>
+            <a href="/admin/team" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Team</span>
+            </a>
+            <a href="/admin/social-proof" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Social Proof</span>
+            </a>
+            <a href="/admin/transparency" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Transparency</span>
+            </a>
+            <a href="/admin/press" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Press Assets</span>
+            </a>
+            <a href="/admin/faq" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">FAQ</span>
+            </a>
+            <a href="/admin/legal" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Legal</span>
+            </a>
+        </div>
+
+        <div class="space-y-2">
+            <p class="text-xs uppercase tracking-wide text-muted/80">Content &amp; Media</p>
+            <a href="/admin/posts" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Posts</span>
+            </a>
+            <a href="/admin/media" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Media Library</span>
+            </a>
+        </div>
+
+        <div class="space-y-2">
+            <p class="text-xs uppercase tracking-wide text-muted/80">Configuration</p>
+            <a href="/admin/navigation" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Navigation</span>
+            </a>
+            <a href="/admin/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Settings</span>
+            </a>
+        </div>
+
+        <div class="space-y-2">
+            <p class="text-xs uppercase tracking-wide text-muted/80">Quick Links</p>
+            <a href="/" target="_blank" rel="noopener" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-glass transition">
+                <span class="text-muted">Open Site Preview</span>
+            </a>
+        </div>
     </nav>
     <div class="px-4 py-6 border-t border-stroke">
         <form method="post" action="/auth/logout">

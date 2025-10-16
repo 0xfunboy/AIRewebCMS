@@ -39,6 +39,10 @@ final class SeedImporter
         self::seedCommands($pdo, $seed['commands'] ?? []);
         self::seedCaseStudies($pdo, $seed['case_studies'] ?? []);
         self::seedPressAssets($pdo, $seed['press_assets'] ?? []);
+        self::seedTransparencyWallets($pdo, $seed['transparency_wallets'] ?? []);
+        self::seedTransparencyReports($pdo, $seed['transparency_reports'] ?? []);
+        self::seedLegalSections($pdo, $seed['legal_sections'] ?? []);
+        self::seedNavigation($pdo, $seed['navigation_groups'] ?? [], $seed['navigation_items'] ?? []);
         self::seedSocialProof($pdo, $seed['social_proof_items'] ?? []);
         self::seedFaq($pdo, $seed['faq_items'] ?? []);
         self::seedBlogPosts($pdo, $seed['blog_posts'] ?? []);
@@ -416,6 +420,197 @@ final class SeedImporter
                 'path' => $asset['file_path'] ?? '#',
                 'order' => $order++,
             ]);
+        }
+    }
+
+    private static function seedTransparencyWallets(PDO $pdo, array $wallets): void
+    {
+        if (!$wallets || self::tableHasRows($pdo, 'transparency_wallets')) {
+            return;
+        }
+
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS transparency_wallets (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                label VARCHAR(150) NOT NULL,
+                wallet_address VARCHAR(120) NOT NULL,
+                sort_order INT UNSIGNED DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO transparency_wallets (label, wallet_address, sort_order) VALUES (:label, :address, :order)'
+        );
+
+        $order = 0;
+        foreach ($wallets as $wallet) {
+            $stmt->execute([
+                'label' => $wallet['label'] ?? '',
+                'address' => $wallet['wallet_address'] ?? '',
+                'order' => $order++,
+            ]);
+        }
+    }
+
+    private static function seedTransparencyReports(PDO $pdo, array $reports): void
+    {
+        if (!$reports || self::tableHasRows($pdo, 'transparency_reports')) {
+            return;
+        }
+
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS transparency_reports (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                label VARCHAR(200) NOT NULL,
+                report_url VARCHAR(255) NOT NULL,
+                sort_order INT UNSIGNED DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO transparency_reports (label, report_url, sort_order) VALUES (:label, :url, :order)'
+        );
+
+        $order = 0;
+        foreach ($reports as $report) {
+            $stmt->execute([
+                'label' => $report['label'] ?? '',
+                'url' => $report['report_url'] ?? '#',
+                'order' => $order++,
+            ]);
+        }
+    }
+
+    private static function seedLegalSections(PDO $pdo, array $sections): void
+    {
+        if (!$sections || self::tableHasRows($pdo, 'legal_sections')) {
+            return;
+        }
+
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS legal_sections (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(200) NOT NULL,
+                content_html LONGTEXT NOT NULL,
+                sort_order INT UNSIGNED DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO legal_sections (title, content_html, sort_order) VALUES (:title, :content, :order)'
+        );
+
+        $order = 0;
+        foreach ($sections as $section) {
+            $stmt->execute([
+                'title' => $section['title'] ?? '',
+                'content' => $section['content_html'] ?? '',
+                'order' => $order++,
+            ]);
+        }
+    }
+
+    private static function seedNavigation(PDO $pdo, array $groups, array $items): void
+    {
+        if (!$groups || self::tableHasRows($pdo, 'navigation_groups')) {
+            return;
+        }
+
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS navigation_groups (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                menu_key ENUM('header','footer') NOT NULL,
+                group_key VARCHAR(60) NOT NULL UNIQUE,
+                title VARCHAR(120) NOT NULL,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                sort_order INT UNSIGNED DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+
+        $groupStmt = $pdo->prepare(
+            'INSERT INTO navigation_groups (menu_key, group_key, title, is_active, sort_order)
+             VALUES (:menu_key, :group_key, :title, :is_active, :sort_order)'
+        );
+
+        $groupSort = 0;
+        $groupIds = [];
+        foreach ($groups as $group) {
+            $groupKey = (string)($group['group_key'] ?? '');
+            if ($groupKey === '') {
+                continue;
+            }
+
+            $groupStmt->execute([
+                'menu_key' => in_array($group['menu_key'] ?? '', ['header', 'footer'], true) ? $group['menu_key'] : 'header',
+                'group_key' => $groupKey,
+                'title' => (string)($group['title'] ?? ucfirst(str_replace('_', ' ', $groupKey))),
+                'is_active' => array_key_exists('is_active', $group) ? (!empty($group['is_active']) ? 1 : 0) : 1,
+                'sort_order' => $group['sort_order'] ?? $groupSort,
+            ]);
+
+            $groupIds[$groupKey] = (int)$pdo->lastInsertId();
+            $groupSort++;
+        }
+
+        if (empty($groupIds) || empty($items) || self::tableHasRows($pdo, 'navigation_items')) {
+            return;
+        }
+
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS navigation_items (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                group_id INT UNSIGNED NOT NULL,
+                label VARCHAR(150) NOT NULL,
+                url VARCHAR(255) NOT NULL,
+                icon_key VARCHAR(80) NULL,
+                is_external TINYINT(1) NOT NULL DEFAULT 0,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                sort_order INT UNSIGNED DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (group_id) REFERENCES navigation_groups(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+
+        $itemStmt = $pdo->prepare(
+            'INSERT INTO navigation_items (group_id, label, url, icon_key, is_external, is_active, sort_order)
+             VALUES (:group_id, :label, :url, :icon_key, :is_external, :is_active, :sort_order)'
+        );
+
+        $groupCounters = [];
+        foreach ($items as $item) {
+            $groupKey = (string)($item['group_key'] ?? '');
+            if ($groupKey === '' || !isset($groupIds[$groupKey])) {
+                continue;
+            }
+
+            $groupId = $groupIds[$groupKey];
+            $groupCounters[$groupKey] = $groupCounters[$groupKey] ?? 0;
+
+            $url = trim((string)($item['url'] ?? '#'));
+            if ($url === '') {
+                $url = '#';
+            }
+
+            $itemStmt->execute([
+                'group_id' => $groupId,
+                'label' => (string)($item['label'] ?? ''),
+                'url' => $url,
+                'icon_key' => $item['icon_key'] ?? null,
+                'is_external' => !empty($item['is_external']) ? 1 : 0,
+                'is_active' => array_key_exists('is_active', $item) ? (!empty($item['is_active']) ? 1 : 0) : 1,
+                'sort_order' => $item['sort_order'] ?? $groupCounters[$groupKey],
+            ]);
+
+            $groupCounters[$groupKey]++;
         }
     }
 

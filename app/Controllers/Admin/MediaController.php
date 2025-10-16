@@ -46,19 +46,15 @@ final class MediaController extends Controller
         $optimizer = new MediaOptimizer(Database::connection());
         try {
             $report = $optimizer->mirror();
-            $this->respondReport('mirror', $report, sprintf(
+            $message = sprintf(
                 'Mirrored %d of %d assets (errors: %d).',
-                (int)$report['processed'],
-                (int)$report['total'],
-                (int)$report['errors']
-            ));
-        } catch (\Throwable $e) {
-            $this->respond(
-                ['details' => $e->getMessage()],
-                false,
-                'Failed to mirror remote assets.',
-                500
+                $report['processed'],
+                $report['total'],
+                $report['errors']
             );
+            $this->respond($report, true, $message);
+        } catch (\Throwable $e) {
+            $this->respond(['error' => $e->getMessage()], false, 'Failed to mirror remote assets.', 500);
         }
     }
 
@@ -69,20 +65,16 @@ final class MediaController extends Controller
         $optimizer = new MediaOptimizer(Database::connection());
         try {
             $report = $optimizer->optimize();
-            $this->respondReport('optimize', $report, sprintf(
+            $message = sprintf(
                 'Optimized %d of %d files to WebP (errors: %d).',
-                (int)$report['processed'],
-                (int)$report['total'],
-                (int)$report['errors']
-            ));
+                $report['processed'],
+                $report['total'],
+                $report['errors']
+            );
+            $this->respond($report, true, $message);
         } catch (\Throwable $e) {
             $errorMessage = $e->getMessage() ?: 'Image optimization failed.';
-            $this->respond(
-                ['details' => $errorMessage],
-                false,
-                $errorMessage,
-                500
-            );
+            $this->respond(['error' => $errorMessage], false, $errorMessage, 500);
         }
     }
 
@@ -123,7 +115,7 @@ final class MediaController extends Controller
             $message = sprintf('Uploaded %s.', basename($path));
             $this->respond($payload, true, $message);
         } catch (\Throwable $e) {
-            $this->respond(['details' => $e->getMessage()], false, 'Upload failed.', 400);
+            $this->respond(['error' => $e->getMessage()], false, 'Upload failed.', 400);
         }
     }
 
@@ -141,16 +133,16 @@ final class MediaController extends Controller
         $path = (string)($_POST['path'] ?? '');
         $relative = $this->normalizeRelativePath($path);
         if ($relative === null) {
-            $this->respond(['details' => 'Invalid media path.'], false, 'Invalid media path.', 422);
+            $this->respond(['error' => 'Invalid media path.'], false, 'Invalid media path.', 422);
         }
 
         if ($this->isMediaReferenced($relative)) {
-            $this->respond(['details' => 'This media asset is still referenced. Update references before deleting.'], false, 'Asset still in use.', 409);
+            $this->respond(['error' => 'This media asset is still referenced. Update references before deleting.'], false, 'Asset still in use.', 409);
         }
 
         $absolute = dirname(__DIR__, 3) . '/public/' . $relative;
         if (!is_file($absolute)) {
-            $this->respond(['details' => 'File not found on disk.'], false, 'File not found.', 404);
+            $this->respond(['error' => 'File not found on disk.'], false, 'File not found.', 404);
         }
 
         $this->removeFileSet($absolute);
@@ -169,16 +161,16 @@ final class MediaController extends Controller
         $path = (string)($_POST['path'] ?? '');
         $relative = $this->normalizeRelativePath($path);
         if ($relative === null) {
-            $this->respond(['details' => 'Invalid media path.'], false, 'Invalid media path.', 422);
+            $this->respond(['error' => 'Invalid media path.'], false, 'Invalid media path.', 422);
         }
 
         if (!isset($_FILES['file']) || ($_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-            $this->respond(['details' => 'Select a file to upload.'], false, 'Select a file to upload.', 422);
+            $this->respond(['error' => 'Select a file to upload.'], false, 'Select a file to upload.', 422);
         }
 
         $absoluteOld = dirname(__DIR__, 3) . '/public/' . $relative;
         if (!is_file($absoluteOld)) {
-            $this->respond(['details' => 'Existing file not found.'], false, 'Existing file not found.', 404);
+            $this->respond(['error' => 'Existing file not found.'], false, 'Existing file not found.', 404);
         }
 
         try {
@@ -203,7 +195,7 @@ final class MediaController extends Controller
                 'variants' => $variantsPayload,
             ]);
         } catch (\Throwable $e) {
-            $this->respond(['details' => $e->getMessage()], false, 'Replace operation failed.', 400);
+            $this->respond(['error' => $e->getMessage()], false, 'Replace operation failed.', 400);
         }
     }
 
@@ -501,39 +493,14 @@ final class MediaController extends Controller
     private function respond(array $payload, bool $success, string $message, int $statusCode = 200): void
     {
         if ($this->wantsJson()) {
-            if ($success) {
-                $body = ['ok' => true, 'message' => $message] + $payload;
-                Response::json($body, $statusCode);
-                return;
-            }
-
-            $code = $statusCode >= 400 ? $statusCode : 400;
-            $body = ['ok' => false, 'error' => $message] + $payload;
-            Response::json($body, $code);
+            $body = ['ok' => $success, 'message' => $message] + $payload;
+            Response::json($body, $success ? $statusCode : ($statusCode >= 400 ? $statusCode : 400));
             return;
         }
 
         $key = $success ? 'admin.media.notice' : 'admin.media.error';
         Flash::set($key, $message);
         $this->redirect('/admin/media');
-    }
-
-    /**
-     * @param array<string,mixed> $report
-     */
-    private function respondReport(string $action, array $report, string $message): void
-    {
-        $payload = [
-            'action' => $action,
-            'steps' => array_values($report['steps'] ?? []),
-            'processed' => (int)($report['processed'] ?? 0),
-            'total' => (int)($report['total'] ?? 0),
-            'errors' => (int)($report['errors'] ?? 0),
-            'warnings' => (int)($report['warnings'] ?? 0),
-            'duration_ms' => (int)($report['duration_ms'] ?? 0),
-        ];
-
-        $this->respond($payload, true, $message);
     }
 
     private function wantsJson(): bool

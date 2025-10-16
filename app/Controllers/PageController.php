@@ -122,7 +122,14 @@ final class PageController extends Controller
     public function transparency(): void
     {
         $settings = $this->content->getSettings();
-        $this->view('public/transparency', compact('settings'));
+        $wallets = $this->content->getTransparencyWallets();
+        $reports = $this->content->getTransparencyReports();
+
+        $this->view('public/transparency', [
+            'settings' => $settings,
+            'wallets' => $wallets,
+            'reports' => $reports,
+        ]);
     }
 
     public function apiPlugins(): void
@@ -139,7 +146,12 @@ final class PageController extends Controller
     public function legal(): void
     {
         $settings = $this->content->getSettings();
-        $this->view('public/legal', compact('settings'));
+        $sections = $this->content->getLegalSections();
+
+        $this->view('public/legal', [
+            'settings' => $settings,
+            'sections' => $sections,
+        ]);
     }
 
     public function faq(): void

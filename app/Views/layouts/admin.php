@@ -5,7 +5,6 @@
 
 use App\Core\View;
 use App\Services\Cms\ContentRepository;
-use App\Services\Security\Csrf;
 use App\Support\Media;
 
 $pageTitle = isset($title) ? $title . ' | AIRewardrop Admin' : 'Admin | AIRewardrop';
@@ -19,7 +18,6 @@ $adminSiteLogo = Media::siteLogoUrl($settings['site_logo'] ?? '');
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="<?= htmlspecialchars(Csrf::token(), ENT_QUOTES, 'UTF-8'); ?>">
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,7 +46,7 @@ $adminSiteLogo = Media::siteLogoUrl($settings['site_logo'] ?? '');
         };
     </script>
     <link rel="stylesheet" href="/assets/css/admin.css">
-    <script src="/assets/js/admin.js?v=20251016" defer></script>
+    <script src="/assets/js/admin.js?v=legacy-safe" defer></script>
 </head>
 <body class="bg-bg text-txt min-h-screen flex">
     <?php View::renderPartial('partials/admin-sidebar', [

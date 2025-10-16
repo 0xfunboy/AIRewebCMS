@@ -12,6 +12,8 @@ use App\Core\Container;
 
 $contentRepository = new ContentRepository();
 $layoutSettings = $contentRepository->getSettings();
+$headerNavigation = $contentRepository->getNavigation('header');
+$footerNavigation = $contentRepository->getNavigation('footer');
 
 $config = Container::get('config', []);
 $baseUrl = rtrim((string)($config['app']['url'] ?? ''), '/');
@@ -149,12 +151,14 @@ if ($isAdmin) {
     <?php View::renderPartial('partials/header', [
         'settings' => $layoutSettings,
         'siteLogo' => $siteLogoPath,
+        'navigation' => $headerNavigation,
     ]); ?>
     <main class="container mx-auto max-w-6xl px-4 py-8 pt-28 space-y-16">
         <?php View::renderPartial($contentTemplate, $contentData ?? []); ?>
     </main>
     <?php View::renderPartial('partials/footer', [
         'siteLogo' => $siteLogoPath,
+        'navigation' => $footerNavigation,
     ]); ?>
     <?php if ($isAdmin): ?>
         <script>
@@ -168,7 +172,7 @@ if ($isAdmin) {
                 }
             };
         </script>
-        <script src="/assets/js/admin.js?v=20251016" defer></script>
+        <script src="/assets/js/admin.js?v=legacy-safe" defer></script>
     <?php endif; ?>
 </body>
 </html>

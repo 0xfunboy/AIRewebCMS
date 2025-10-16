@@ -3,22 +3,23 @@
     RewriteEngine On
     Options -MultiViews
 
-    # Serve direttamente file e directory esistenti
+    # Se è un file o una cartella reale, servilo direttamente
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # Area admin
+    # /admin e sottopercorsi -> admin.php
     RewriteRule ^admin(?:/.*)?$ admin.php [QSA,L]
 
-    # Front controller pubblico
+    # Tutto il resto -> index.php
     RewriteRule ^ index.php [QSA,L]
 </IfModule>
 
 # === Sicurezza base ===
+# Niente listing
 Options -Indexes
 
-# Blocca dotfiles, configurazioni e backup
+# Blocca dotfiles e file sensibili (incluso .env.php)
 <FilesMatch "(^\.|\.env(\.php)?|composer\.(json|lock)|package(-lock)?\.json|pnpm-lock\.yaml|yarn\.lock|webpack.*|vite.*|Makefile|README.*|LICENSE|.*\.(sql|sqlite|bak|zip|tar|gz|tgz))$">
     Require all denied
 </FilesMatch>
@@ -28,12 +29,9 @@ Options -Indexes
     Require all denied
 </FilesMatch>
 
-# Impedisci esecuzione PHP nelle directory statiche / media
+# Impedisci esecuzione PHP dove non serve (assets/upload)
 <IfModule mod_php.c>
     <FilesMatch "^assets/.*\.(php|phar|phtml)$">
-        Require all denied
-    </FilesMatch>
-    <FilesMatch "^media/.*\.(php|phar|phtml)$">
         Require all denied
     </FilesMatch>
     <FilesMatch "^uploads/.*\.(php|phar|phtml)$">
@@ -51,12 +49,15 @@ Options -Indexes
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set X-Content-Type-Options "nosniff"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set X-Download-Options "noopen"
-    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), bluetooth=()"
+    # HSTS: abilitalo solo se TUTTO è in HTTPS
     Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains; preload" env=HTTPS
+    # Riduci superfici API del browser
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), bluetooth=()"
+    # Protezione download
+    Header always set X-Download-Options "noopen"
 </IfModule>
 
-# === Caching statico ===
+# Caching statico leggero
 <IfModule mod_expires.c>
     ExpiresActive On
     ExpiresByType text/css "access plus 7 days"

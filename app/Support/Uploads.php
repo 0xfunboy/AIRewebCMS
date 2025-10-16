@@ -108,111 +108,61 @@ final class Uploads
             }
         }
 
-        $targetTmp = $targetAbsolute . '.tmp';
-        if (!@copy($sourceAbsolute, $targetTmp)) {
+        $backupAbsolute = $targetAbsolute . '.bak';
+        $counter = 0;
+        while (file_exists($backupAbsolute)) {
+            $counter++;
+            $backupAbsolute = $targetAbsolute . '.bak' . $counter;
+        }
+
+        if (!@rename($targetAbsolute, $backupAbsolute)) {
             @unlink($sourceAbsolute);
             foreach ($stored['variants'] as $variant) {
                 $variantAbs = dirname(__DIR__, 2) . '/public/' . ltrim($variant['path'], '/');
                 @unlink($variantAbs);
             }
-            throw new \RuntimeException('Unable to stage replacement file.');
-        }
-        @unlink($sourceAbsolute);
-
-        $variantTemps = [];
-        foreach ($stored['variants'] as $variantFormat => $variant) {
-            $sourceVariantAbsolute = dirname(__DIR__, 2) . '/public/' . ltrim($variant['path'], '/');
-            if (!is_file($sourceVariantAbsolute)) {
-                continue;
-            }
-            $ext = strtolower(pathinfo($sourceVariantAbsolute, PATHINFO_EXTENSION));
-            if ($ext === '') {
-                @unlink($sourceVariantAbsolute);
-                continue;
-            }
-            $tmpPath = $targetBase . '.' . $ext . '.tmp';
-            if (!@copy($sourceVariantAbsolute, $tmpPath)) {
-                @unlink($sourceVariantAbsolute);
-                @unlink($targetTmp);
-                foreach ($variantTemps as $tmpInfo) {
-                    if (is_file($tmpInfo['tmp'])) {
-                        @unlink($tmpInfo['tmp']);
-                    }
-                }
-                throw new \RuntimeException('Unable to stage replacement variant.');
-            }
-            @unlink($sourceVariantAbsolute);
-            $variantTemps[$variantFormat] = [
-                'tmp' => $tmpPath,
-                'final' => $targetBase . '.' . $ext,
-                'width' => $variant['width'],
-                'height' => $variant['height'],
-            ];
-        }
-
-        $backupAbsolute = self::makeUniqueBackupPath($targetAbsolute);
-        if (!@rename($targetAbsolute, $backupAbsolute)) {
-            @unlink($targetTmp);
-            foreach ($variantTemps as $info) {
-                if (is_file($info['tmp'])) {
-                    @unlink($info['tmp']);
-                }
-            }
             throw new \RuntimeException('Unable to prepare existing file for replacement.');
         }
 
-        $variantBackups = [];
+        $renamedVariants = [];
         $variantSummaries = [];
 
         try {
-            if (!@rename($targetTmp, $targetAbsolute)) {
+            if (!@rename($sourceAbsolute, $targetAbsolute)) {
                 throw new \RuntimeException('Unable to write replacement file.');
             }
 
-            foreach ($variantTemps as $format => $info) {
-                $final = $info['final'];
-                $tmp = $info['tmp'];
-
-                if (is_file($final)) {
-                    $variantBackups[$final] = self::makeUniqueBackupPath($final);
-                    if (!@rename($final, $variantBackups[$final])) {
-                        throw new \RuntimeException('Unable to prepare existing variant for replacement.');
-                    }
+            foreach ($stored['variants'] as $variantFormat => $variant) {
+                $sourceVariantAbsolute = dirname(__DIR__, 2) . '/public/' . ltrim($variant['path'], '/');
+                if (!is_file($sourceVariantAbsolute)) {
+                    continue;
                 }
-
-                if (!@rename($tmp, $final)) {
+                $ext = strtolower(pathinfo($sourceVariantAbsolute, PATHINFO_EXTENSION));
+                if ($ext === '') {
+                    @unlink($sourceVariantAbsolute);
+                    continue;
+                }
+                $targetVariantAbsolute = $targetBase . '.' . $ext;
+                if (!@rename($sourceVariantAbsolute, $targetVariantAbsolute)) {
                     throw new \RuntimeException('Unable to write replacement variant.');
                 }
-
-                if (isset($variantBackups[$final]) && is_file($variantBackups[$final])) {
-                    @unlink($variantBackups[$final]);
-                    unset($variantBackups[$final]);
-                }
-
-                $relativeVariant = ltrim(str_replace(dirname(__DIR__, 2) . '/public/', '', $final), '/');
-                $variantSummaries[$format] = [
+                $renamedVariants[] = $targetVariantAbsolute;
+                $relativeVariant = ltrim(str_replace(dirname(__DIR__, 2) . '/public/', '', $targetVariantAbsolute), '/');
+                $variantSummaries[$variantFormat] = [
                     'path' => $relativeVariant,
-                    'width' => $info['width'],
-                    'height' => $info['height'],
+                    'width' => $variant['width'],
+                    'height' => $variant['height'],
                 ];
-                unset($existingVariantPaths[$final]);
-            }
-
-            foreach ($variantBackups as $path) {
-                if (is_file($path)) {
-                    @unlink($path);
-                }
+                unset($existingVariantPaths[$targetVariantAbsolute]);
             }
 
             foreach ($existingVariantPaths as $oldPath => $_) {
-                if (is_file($oldPath)) {
+                if (is_file($oldPath) && !in_array($oldPath, $renamedVariants, true)) {
                     @unlink($oldPath);
                 }
             }
 
-            if (is_file($backupAbsolute)) {
-                @unlink($backupAbsolute);
-            }
+            @unlink($backupAbsolute);
 
             return [
                 'path' => $targetRelative,
@@ -221,45 +171,30 @@ final class Uploads
                 'variants' => $variantSummaries,
             ];
         } catch (\Throwable $exception) {
+            foreach ($renamedVariants as $targetVariantAbsolute) {
+                if (is_file($targetVariantAbsolute)) {
+                    @unlink($targetVariantAbsolute);
+                }
+            }
+
+            foreach ($stored['variants'] as $variant) {
+                $variantAbs = dirname(__DIR__, 2) . '/public/' . ltrim($variant['path'], '/');
+                if (is_file($variantAbs)) {
+                    @unlink($variantAbs);
+                }
+            }
+
+            if (is_file($sourceAbsolute)) {
+                @unlink($sourceAbsolute);
+            }
+
             if (is_file($targetAbsolute)) {
                 @unlink($targetAbsolute);
             }
 
             @rename($backupAbsolute, $targetAbsolute);
-
-            if (is_file($targetTmp)) {
-                @unlink($targetTmp);
-            }
-
-            foreach ($variantBackups as $final => $backup) {
-                if (is_file($final)) {
-                    @unlink($final);
-                }
-                if (is_file($backup)) {
-                    @rename($backup, $final);
-                }
-            }
-
-            foreach ($variantTemps as $info) {
-                if (is_file($info['tmp'])) {
-                    @unlink($info['tmp']);
-                }
-            }
-
             throw $exception;
         }
-    }
-
-    private static function makeUniqueBackupPath(string $path): string
-    {
-        $candidate = $path . '.bak';
-        $counter = 0;
-        while (file_exists($candidate)) {
-            $counter++;
-            $candidate = $path . '.bak' . $counter;
-        }
-
-        return $candidate;
     }
 
     private static function isAllowedMime(string $mime, string $ext): bool

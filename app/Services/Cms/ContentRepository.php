@@ -141,6 +141,81 @@ final class ContentRepository
         return $stmt->fetchAll() ?: [];
     }
 
+    public function getTransparencyWallets(): array
+    {
+        $stmt = $this->db->query('SELECT * FROM transparency_wallets ORDER BY sort_order ASC, label ASC');
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function getTransparencyReports(): array
+    {
+        $stmt = $this->db->query('SELECT * FROM transparency_reports ORDER BY sort_order ASC, label ASC');
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function getLegalSections(): array
+    {
+        $stmt = $this->db->query('SELECT * FROM legal_sections ORDER BY sort_order ASC, title ASC');
+        return $stmt->fetchAll() ?: [];
+    }
+
+    /**
+     * @return array<int, array{group_key:string,title:string,items:array<int,array>}> 
+     */
+    public function getNavigation(string $menuKey): array
+    {
+        $menu = $menuKey === 'footer' ? 'footer' : 'header';
+
+        $groupStmt = $this->db->prepare(
+            'SELECT id, group_key, title
+             FROM navigation_groups
+             WHERE menu_key = :menu AND is_active = 1
+             ORDER BY sort_order ASC, id ASC'
+        );
+        $groupStmt->execute(['menu' => $menu]);
+        $groups = $groupStmt->fetchAll();
+
+        if (!$groups) {
+            return [];
+        }
+
+        $groupMap = [];
+        $groupIds = [];
+        foreach ($groups as $index => $group) {
+            $groupIds[] = (int)$group['id'];
+            $groupMap[(int)$group['id']] = [
+                'group_key' => $group['group_key'],
+                'title' => $group['title'],
+                'items' => [],
+            ];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($groupIds), '?'));
+        $itemsStmt = $this->db->prepare(
+            "SELECT group_id, label, url, icon_key, is_external
+             FROM navigation_items
+             WHERE group_id IN ($placeholders) AND is_active = 1
+             ORDER BY sort_order ASC, id ASC"
+        );
+        $itemsStmt->execute($groupIds);
+        $items = $itemsStmt->fetchAll() ?: [];
+
+        foreach ($items as $item) {
+            $gid = (int)$item['group_id'];
+            if (!isset($groupMap[$gid])) {
+                continue;
+            }
+            $groupMap[$gid]['items'][] = [
+                'label' => $item['label'],
+                'url' => $item['url'],
+                'icon_key' => $item['icon_key'],
+                'is_external' => (bool)$item['is_external'],
+            ];
+        }
+
+        return array_values($groupMap);
+    }
+
     public function getSocialProofItems(): array
     {
         $stmt = $this->db->query('SELECT * FROM social_proof_items ORDER BY sort_order ASC');

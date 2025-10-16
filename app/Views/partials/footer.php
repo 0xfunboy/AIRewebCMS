@@ -1,19 +1,28 @@
 <?php
 use App\Support\Media;
 
-$columns = [
-    [
+$navigation = $navigation ?? [];
+$groupMap = [];
+foreach ($navigation as $group) {
+    if (empty($group['group_key'])) {
+        continue;
+    }
+    $groupMap[$group['group_key']] = $group;
+}
+
+$defaultColumns = [
+    'footer_navigate' => [
         'title' => 'Navigate',
-        'links' => [
+        'items' => [
             ['label' => 'Products', 'url' => '/products'],
             ['label' => 'Agents', 'url' => '/agents'],
             ['label' => 'Roadmap', 'url' => '/roadmap'],
             ['label' => 'Clients', 'url' => '/clients'],
         ],
     ],
-    [
+    'footer_resources' => [
         'title' => 'Resources',
-        'links' => [
+        'items' => [
             ['label' => 'User Manual', 'url' => '/commands'],
             ['label' => 'Tokenomics', 'url' => '/tokenomics'],
             ['label' => 'Social Proof', 'url' => '/social-proof'],
@@ -23,17 +32,17 @@ $columns = [
             ['label' => 'FAQ', 'url' => '/faq'],
         ],
     ],
-    [
+    'footer_community' => [
         'title' => 'Community',
-        'links' => [
-            ['label' => 'Telegram Channel', 'url' => 'https://t.me/AIRewardrop', 'external' => true],
-            ['label' => 'Telegram Community', 'url' => 'https://t.me/AIR3Community', 'external' => true],
-            ['label' => 'Discord', 'url' => 'https://discord.gg/S4f87VdsHt', 'external' => true],
+        'items' => [
+            ['label' => 'Telegram Channel', 'url' => 'https://t.me/AIRewardrop', 'is_external' => true],
+            ['label' => 'Telegram Community', 'url' => 'https://t.me/AIR3Community', 'is_external' => true],
+            ['label' => 'Discord', 'url' => 'https://discord.gg/S4f87VdsHt', 'is_external' => true],
         ],
     ],
-    [
+    'footer_legal' => [
         'title' => 'Legal',
-        'links' => [
+        'items' => [
             ['label' => 'Terms of Service', 'url' => '/legal'],
             ['label' => 'Privacy Policy', 'url' => '/legal'],
             ['label' => 'Cookie Policy', 'url' => '/legal'],
@@ -41,15 +50,49 @@ $columns = [
     ],
 ];
 
-$social = [
-    ['name' => 'X / Twitter', 'icon' => 'twitter', 'url' => 'https://x.com/AIRewardrop'],
-    ['name' => 'Telegram', 'icon' => 'telegram', 'url' => 'https://t.me/AIR3Community'],
-    ['name' => 'Discord', 'icon' => 'discord', 'url' => 'https://discord.gg/S4f87VdsHt'],
-    ['name' => 'YouTube', 'icon' => 'youtube', 'url' => 'https://www.youtube.com/@AIRewardrop'],
-    ['name' => 'Twitch', 'icon' => 'twitch', 'url' => 'https://www.twitch.tv/airewardrop'],
-    ['name' => 'TikTok', 'icon' => 'tiktok', 'url' => 'https://www.tiktok.com/@airewardrop'],
-    ['name' => 'Instagram', 'icon' => 'instagram', 'url' => 'https://www.instagram.com/airewardrop/'],
+$defaultSocial = [
+    ['label' => 'X / Twitter', 'url' => 'https://x.com/AIRewardrop', 'icon_key' => 'twitter', 'is_external' => true],
+    ['label' => 'Telegram', 'url' => 'https://t.me/AIR3Community', 'icon_key' => 'telegram', 'is_external' => true],
+    ['label' => 'Discord', 'url' => 'https://discord.gg/S4f87VdsHt', 'icon_key' => 'discord', 'is_external' => true],
+    ['label' => 'YouTube', 'url' => 'https://www.youtube.com/@AIRewardrop', 'icon_key' => 'youtube', 'is_external' => true],
+    ['label' => 'Twitch', 'url' => 'https://www.twitch.tv/airewardrop', 'icon_key' => 'twitch', 'is_external' => true],
+    ['label' => 'TikTok', 'url' => 'https://www.tiktok.com/@airewardrop', 'icon_key' => 'tiktok', 'is_external' => true],
+    ['label' => 'Instagram', 'url' => 'https://www.instagram.com/airewardrop/', 'icon_key' => 'instagram', 'is_external' => true],
 ];
+
+$normalizeItems = static function (array $items): array {
+    $normalized = [];
+    foreach ($items as $item) {
+        $normalized[] = [
+            'label' => (string)($item['label'] ?? ''),
+            'url' => (string)($item['url'] ?? '#'),
+            'is_external' => !empty($item['is_external']),
+            'icon_key' => $item['icon_key'] ?? null,
+        ];
+    }
+    return $normalized;
+};
+
+$columnOrder = ['footer_navigate', 'footer_resources', 'footer_community', 'footer_legal'];
+$columns = [];
+foreach ($columnOrder as $key) {
+    $default = $defaultColumns[$key];
+    $group = $groupMap[$key] ?? null;
+    $items = $group ? $normalizeItems($group['items'] ?? []) : [];
+    if (empty($items)) {
+        $items = $normalizeItems($default['items']);
+    }
+    $columns[] = [
+        'title' => (string)($group['title'] ?? $default['title']),
+        'items' => $items,
+    ];
+}
+
+$socialGroup = $groupMap['footer_social']['items'] ?? [];
+$socialLinks = $normalizeItems($socialGroup);
+if (empty($socialLinks)) {
+    $socialLinks = $normalizeItems($defaultSocial);
+}
 
 $siteLogoUrl = $siteLogo ?? '';
 if ($siteLogoUrl === '') {
@@ -80,8 +123,8 @@ if ($siteLogoUrl === '') {
                     <div>
                         <h3 class="font-bold text-acc mb-4"><?= htmlspecialchars($column['title'], ENT_QUOTES, 'UTF-8'); ?></h3>
                         <ul class="space-y-2">
-                            <?php foreach ($column['links'] as $link): ?>
-                                <?php if (!empty($link['external'])): ?>
+                            <?php foreach ($column['items'] as $link): ?>
+                                <?php if ($link['is_external']): ?>
                                     <li><a href="<?= htmlspecialchars($link['url'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" class="text-muted hover:text-pri text-sm"><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?></a></li>
                                 <?php else: ?>
                                     <li><a href="<?= htmlspecialchars($link['url'], ENT_QUOTES, 'UTF-8'); ?>" class="text-muted hover:text-pri text-sm"><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?></a></li>
@@ -98,9 +141,10 @@ if ($siteLogoUrl === '') {
                 Disclaimer: Not financial advice. Always do your own research.
             </p>
             <div class="flex items-center gap-4">
-                <?php foreach ($social as $item): ?>
-                    <a href="<?= htmlspecialchars($item['url'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8'); ?>" class="text-muted hover:text-pri transition-colors">
-                        <?= icon_svg($item['icon'], 'h-6 w-6'); ?>
+                <?php foreach ($socialLinks as $item): ?>
+                    <?php $icon = $item['icon_key'] ?? ''; ?>
+                    <a href="<?= htmlspecialchars($item['url'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?= htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8'); ?>" class="text-muted hover:text-pri transition-colors">
+                        <?= icon_svg($icon !== '' ? $icon : 'check-circle', 'h-6 w-6'); ?>
                     </a>
                 <?php endforeach; ?>
             </div>

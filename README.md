@@ -119,28 +119,6 @@ ALTER TABLE partners ADD COLUMN badge_logo_url VARCHAR(255) NULL AFTER logo_url;
 
 The public hero and social preview image default to `/media/svg/hero/hero-default.svg`; uploading a new asset through Settings replaces the stored path while the fallback remains available in version control.
 
-#### Media Maintenance Actions
-- **Local Mirror Images** (`POST /admin/media/mirror`) scans every configured content column plus the global settings table, normalises remote URLs (supports protocol-relative links, uppercase schemes, and trailing spaces), downloads assets through cURL with redirect support, rewrites database references to the mirrored `/media/...` path, and emits a consistent JSON summary:
-  ```json
-  {
-    "ok": true,
-    "action": "mirror",
-    "processed": 27,
-    "total": 27,
-    "errors": 0,
-    "warnings": 0,
-    "duration_ms": 820,
-    "steps": [
-      {"phase":1,"current":1,"total":27,"message":"Mirrored settings.og_image","status":"ok"}
-    ]
-  }
-  ```
-  The dashboard logger renders the message + per-step statuses and refreshes the grid automatically on completion.
-- **Optimize to WebP** (`POST /admin/media/optimize`) walks `public/media`, converts raster files to WebP via Imagick or GD (with graceful error messages when support is missing), updates references to the new asset, and uses the same summary contract (`action: "optimize"`) with warnings for skipped files.
-- **Replace media** keeps URLs stable by staging uploads as `filename.ext.tmp`, swapping them into place atomically, regenerating variant siblings, and rolling back cleanly if any step fails.
-- **Delete media** scans all known tables before unlinking files. References trigger HTTP 409 responses so accidental removals are prevented.
-- Admin JS is cache-busted with `/assets/js/admin.js?v=20251016`—after deployments purge Cloudflare (or other CDN caches) to guarantee clients receive the latest bundle.
-
 ## Usage
 - Visit `/login` to access the admin area. Configure the allowed wallet addresses in `.env.php`.
 - The dashboard provides CRUD interfaces for all public-facing modules. Saving changes updates the MySQL tables consumed by the public pages.

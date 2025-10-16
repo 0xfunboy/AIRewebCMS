@@ -4,7 +4,6 @@
 /** @var string|null $error */
 /** @var string $csrfToken */
 
-use App\Core\View;
 use App\Support\Media;
 
 $normalizeAsset = static function (?string $value): string {
@@ -22,24 +21,14 @@ $normalizeAsset = static function (?string $value): string {
     return '/' . ltrim($trimmed, '/');
 };
 
-$favicon = $normalizeAsset($settings['favicon_path'] ?? '/favicon.svg');
 $siteLogo = $normalizeAsset($settings['site_logo'] ?? '');
-$siteLogoUsesFallback = $siteLogo === '';
-
-$shareImageRaw = $settings['seo_share_image'] ?? ($settings['og_image'] ?? '');
-$shareImage = $normalizeAsset($shareImageRaw);
-$shareImageUsesFallback = $shareImage === '';
-if ($shareImageUsesFallback) {
+$siteLogoPreview = Media::siteLogoUrl($settings['site_logo'] ?? '');
+$favicon = $normalizeAsset($settings['favicon_path'] ?? '/favicon.svg');
+$shareImage = $normalizeAsset($settings['seo_share_image'] ?? ($settings['og_image'] ?? ''));
+if ($shareImage === '') {
     $shareImage = Media::assetSvg('products/product1.svg');
 }
-
-$siteLogoHelper = $siteLogoUsesFallback
-    ? 'PNG/SVG/WebP, up to 5 MB. Defaults to the bundled site logo when empty.'
-    : 'PNG/SVG/WebP, up to 5 MB.';
-$faviconHelper = 'Square image or .ico, up to 5 MB.';
-$shareImageHelper = $shareImageUsesFallback
-    ? 'Recommended 1200x630, PNG/JPEG/WebP, max 5 MB. Defaults to the product hero artwork when empty.'
-    : 'Recommended 1200x630, PNG/JPEG/WebP, max 5 MB.';
+$baseSiteName = $settings['site_name'] ?? 'AIRewardrop';
 ?>
 
 <section class="space-y-8 max-w-4xl">
@@ -95,22 +84,25 @@ $shareImageHelper = $shareImageUsesFallback
         <input type="hidden" name="action" value="brand">
         <h2 class="text-sm font-semibold text-acc uppercase tracking-wide">Brand Assets</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <?php View::renderPartial('admin/partials/media-input', [
-                'label' => 'Site logo',
-                'name' => 'site_logo',
-                'current' => $siteLogo,
-                'uploadName' => 'site_logo',
-                'accept' => '.png,.jpg,.jpeg,.webp,.svg',
-                'helper' => $siteLogoHelper,
-            ]); ?>
-            <?php View::renderPartial('admin/partials/media-input', [
-                'label' => 'Favicon',
-                'name' => 'favicon_path',
-                'current' => $favicon,
-                'uploadName' => 'favicon',
-                'accept' => '.png,.jpg,.jpeg,.webp,.svg,.ico',
-                'helper' => $faviconHelper,
-            ]); ?>
+            <div class="space-y-3">
+                <p class="text-sm font-semibold text-acc">Site logo</p>
+                <div class="bg-bg2 border border-stroke rounded-lg p-4 flex items-center justify-center min-h-[120px]">
+                    <img src="<?= htmlspecialchars($siteLogoPreview, ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars($baseSiteName, ENT_QUOTES, 'UTF-8'); ?>" class="max-h-20 max-w-full">
+                    <?php if ($siteLogo === ''): ?>
+                        <span class="sr-only">Using default site logo</span>
+                    <?php endif; ?>
+                </div>
+                <input type="file" name="site_logo" accept=".png,.jpg,.jpeg,.webp,.svg" class="text-sm text-muted">
+                <p class="text-xs text-muted">PNG/SVG/WebP, up to 5 MB.</p>
+            </div>
+            <div class="space-y-3">
+                <p class="text-sm font-semibold text-acc">Favicon</p>
+                <div class="bg-bg2 border border-stroke rounded-lg p-4 flex items-center justify-center min-h-[120px]">
+                    <img src="<?= htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8'); ?>" alt="Favicon" class="h-12 w-12">
+                </div>
+                <input type="file" name="favicon" accept=".png,.jpg,.jpeg,.webp,.svg,.ico" class="text-sm text-muted">
+                <p class="text-xs text-muted">Square image or .ico, up to 5 MB.</p>
+            </div>
         </div>
         <div class="flex items-center gap-3 pt-2">
             <button type="submit" class="bg-pri text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-red-500/80 transition">Save Brand Assets</button>
@@ -155,14 +147,18 @@ $shareImageHelper = $shareImageUsesFallback
                 <textarea name="seo_discord_description" rows="3" class="bg-bg2 border border-stroke rounded-md px-3 py-2 text-acc focus:border-cy focus:outline-none"><?= htmlspecialchars($settings['seo_discord_description'] ?? '', ENT_QUOTES, 'UTF-8'); ?></textarea>
             </label>
         </div>
-        <?php View::renderPartial('admin/partials/media-input', [
-            'label' => 'Share preview image',
-            'name' => 'seo_share_image',
-            'current' => $shareImage,
-            'uploadName' => 'seo_share_image',
-            'accept' => '.png,.jpg,.jpeg,.webp',
-            'helper' => $shareImageHelper,
-        ]); ?>
+        <div class="space-y-3">
+            <p class="text-sm font-semibold text-acc">Share preview image</p>
+            <div class="bg-bg2 border border-stroke rounded-lg p-4 flex items-center justify-center min-h-[160px]">
+                <?php if ($shareImage): ?>
+                    <img src="<?= htmlspecialchars($shareImage, ENT_QUOTES, 'UTF-8'); ?>" alt="Share preview" class="max-h-40 max-w-full">
+                <?php else: ?>
+                    <span class="text-xs text-muted">No preview image uploaded</span>
+                <?php endif; ?>
+            </div>
+            <input type="file" name="seo_share_image" accept=".png,.jpg,.jpeg,.webp" class="text-sm text-muted">
+            <p class="text-xs text-muted">Recommended 1200x630, PNG/JPEG/WebP, max 5 MB.</p>
+        </div>
         <div class="flex items-center gap-3 pt-2">
             <button type="submit" class="bg-pri text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-red-500/80 transition">Save SEO Settings</button>
         </div>

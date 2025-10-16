@@ -5,7 +5,7 @@
     }
     window.__AIRewebLegacyAdminLoader = true;
     var script = document.createElement('script');
-    script.src = '/assets/js/admin.js?v=20251016';
+    script.src = '/assets/js/admin.js';
     script.defer = true;
     document.head.appendChild(script);
 })();
