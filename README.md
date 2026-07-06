@@ -1,3 +1,11 @@
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=160&section=header&text=AIRewebCMS&fontSize=50&fontColor=fff&animation=fadeIn&fontAlignY=38&desc=CMS%20for%20AI%20Agents%20and%20Crypto%20Project%20Business%20Agency&descAlignY=60&descSize=14" width="100%"/>
+
+<img src="https://skillicons.dev/icons?i=php,js,css,mysql&theme=dark" alt="Tech stack"/>
+
+</div>
+
 # AIRewebCMS
 
 A lightweight PHP + MySQL CMS powering the AIRewardrop agent website. The system replaces the former React front-end with server-rendered views, an admin dashboard, WalletConnect-based authentication, and database-driven content modules for products, blog posts, roadmap milestones, partners, social proof, and more.
