@@ -139,3 +139,7 @@ The public hero and social preview image default to `/media/svg/hero/hero-defaul
 - Regularly back up the MySQL database and storage directory.
 
 Happy shipping!
+
+## Licensing
+
+Licensing scope and preserved third-party permissions are documented in [LICENSING.md](LICENSING.md). The [0xfunboy Non-Commercial License](LICENSE.md) covers eligible original material only.
