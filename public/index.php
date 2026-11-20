@@ -25,6 +25,7 @@ $router->get('/transparency', [PageController::class, 'transparency']);
 $router->get('/api-plugins', [PageController::class, 'apiPlugins']);
 $router->get('/press', [PageController::class, 'press']);
 $router->get('/legal', [PageController::class, 'legal']);
+$router->get('/legal/{slug}', [PageController::class, 'legalSection']);
 $router->get('/faq', [PageController::class, 'faq']);
 $router->get('/contact', [PageController::class, 'contact']);
 $router->post('/contact', [ContactController::class, 'submit']);
