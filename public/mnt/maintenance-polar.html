@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>POLdApp — Maintenance</title>
+    <meta name="description" content="POLdApp is currently under maintenance. We'll be back very soon." />
+    <meta name="robots" content="noindex" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --c-background: 7 10 16;
+        --c-surface: 15 20 29;
+        --c-surface-highlight: 24 32 44;
+        --c-border: 36 48 64;
+        --c-primary: 0 195 255;
+        --c-danger: 255 59 59;
+        --c-text-main: 230 238 246;
+        --c-text-muted: 166 186 207;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        background:
+          radial-gradient(circle at 20% 20%, rgba(225, 29, 72, 0.08), transparent 30%),
+          radial-gradient(circle at 80% 0%, rgba(0, 195, 255, 0.10), transparent 28%),
+          radial-gradient(circle at 50% 120%, rgba(0, 195, 255, 0.06), transparent 40%),
+          rgb(var(--c-background));
+        color: rgb(var(--c-text-main));
+        font-family: 'Inter', sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        min-height: 100%;
+        overflow: hidden;
+      }
+
+      .glass-panel {
+        position: relative;
+        width: 100%;
+        max-width: 480px;
+        background: rgba(18, 18, 18, 0.75);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 22px;
+        padding: 2.75rem 2rem 2.5rem;
+        text-align: center;
+        box-shadow:
+          0 24px 60px -20px rgba(0, 0, 0, 0.7),
+          0 0 60px -28px rgba(0, 195, 255, 0.35);
+        overflow: hidden;
+      }
+
+      .glass-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 22px;
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(0,195,255,0.45), transparent 40%, rgba(255,59,59,0.35));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgb(var(--c-primary));
+        background: rgba(0, 195, 255, 0.08);
+        border: 1px solid rgba(0, 195, 255, 0.25);
+        padding: 0.35rem 0.8rem;
+        border-radius: 999px;
+        margin-bottom: 1.5rem;
+      }
+
+      .badge .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgb(var(--c-primary));
+        box-shadow: 0 0 10px rgb(var(--c-primary));
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.35; transform: scale(0.7); }
+      }
+
+      .logo {
+        font-family: 'Anton', sans-serif;
+        font-size: 2.4rem;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        margin-bottom: 1.4rem;
+      }
+      .logo .pol { color: rgb(var(--c-text-main)); }
+      .logo .dapp {
+        background: linear-gradient(90deg, rgb(var(--c-primary)), #4dd6ff);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      h1 {
+        font-size: 1.55rem;
+        font-weight: 700;
+        margin: 0 0 0.65rem;
+        letter-spacing: -0.01em;
+      }
+
+      .sub {
+        color: rgb(var(--c-text-muted));
+        font-size: 1rem;
+        line-height: 1.55;
+        margin: 0 0 1.9rem;
+      }
+      .sub .accent { color: rgb(var(--c-primary)); font-weight: 600; }
+
+      .timer-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: rgb(var(--c-text-muted));
+        margin-bottom: 0.55rem;
+      }
+
+      .timer {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 2.6rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: rgb(var(--c-text-main));
+        text-shadow: 0 0 24px rgba(0, 195, 255, 0.35);
+        font-variant-numeric: tabular-nums;
+      }
+      .timer .sep { color: rgb(var(--c-primary)); }
+
+      .progress {
+        margin-top: 1.6rem;
+        height: 6px;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .progress > span {
+        display: block;
+        height: 100%;
+        width: 60%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgb(var(--c-primary)), rgb(var(--c-danger)));
+        transition: width 0.9s linear;
+      }
+
+      .redirect-note {
+        margin-top: 1.6rem;
+        font-size: 0.8rem;
+        color: rgb(var(--c-text-muted));
+      }
+      .redirect-note a {
+        color: rgb(var(--c-primary));
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .redirect-note a:hover { text-decoration: underline; }
+
+      @media (max-width: 380px) {
+        .timer { font-size: 2.1rem; }
+        .logo { font-size: 2rem; }
+        h1 { font-size: 1.35rem; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="glass-panel">
+      <span class="badge"><span class="dot"></span> System status · Maintenance</span>
+
+      <div class="logo"><span class="pol">POL</span><span class="dapp">dapp</span></div>
+
+      <h1>dApp under maintenance</h1>
+      <p class="sub">
+        Update in progress.<br />
+        The dApp will be back <span class="accent">very soon</span>.
+      </p>
+
+      <div class="timer-label">Estimated time</div>
+      <div class="timer" id="timer">02<span class="sep">:</span>56<span class="sep">:</span>00</div>
+
+      <div class="progress"><span id="bar"></span></div>
+
+      <p class="redirect-note">
+        Redirecting to <a href="https://polarberai.xyz">polarberai.xyz</a> in <span id="rc">10</span>s…
+      </p>
+    </main>
+
+    <script>
+      (function () {
+        var CYCLE = 2 * 3600 + 56 * 60; // 02:56:00 in seconds
+        var STORAGE_KEY = 'poldapp_maint_start';
+        var REDIRECT_URL = 'https://polarberai.xyz';
+        var REDIRECT_AFTER = 10; // seconds
+
+        // Start on first arrival, or pick up an already-running timer.
+        var start = parseInt(localStorage.getItem(STORAGE_KEY) || '', 10);
+        if (!start || isNaN(start)) {
+          start = Math.floor(Date.now() / 1000);
+          try { localStorage.setItem(STORAGE_KEY, String(start)); } catch (e) {}
+        }
+
+        var timerEl = document.getElementById('timer');
+        var barEl = document.getElementById('bar');
+
+        function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+        function renderTimer() {
+          var elapsed = Math.floor(Date.now() / 1000) - start;
+          var withinCycle = ((elapsed % CYCLE) + CYCLE) % CYCLE; // safe modulo
+          var remaining = CYCLE - withinCycle; // counts down, then loops
+          var h = Math.floor(remaining / 3600);
+          var m = Math.floor((remaining % 3600) / 60);
+          var s = remaining % 60;
+          timerEl.innerHTML =
+            pad(h) + '<span class="sep">:</span>' +
+            pad(m) + '<span class="sep">:</span>' +
+            pad(s);
+          barEl.style.width = ((remaining / CYCLE) * 100).toFixed(2) + '%';
+        }
+
+        renderTimer();
+        setInterval(renderTimer, 1000);
+
+        // Auto-redirect after 10 seconds.
+        var rcEl = document.getElementById('rc');
+        var left = REDIRECT_AFTER;
+        var rc = setInterval(function () {
+          left -= 1;
+          if (rcEl) rcEl.textContent = left < 0 ? 0 : left;
+          if (left <= 0) {
+            clearInterval(rc);
+            window.location.href = REDIRECT_URL;
+          }
+        }, 1000);
+      })();
+    </script>
+  </body>
+</html>

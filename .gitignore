@@ -1,2 +1,11 @@
 env.php
 airewagcms_mysql_db.sql
+/.env.php
+/storage/*
+!/storage/cache/
+!/storage/logs/
+/storage/cache/*
+/storage/logs/*
+!/storage/cache/.gitkeep
+!/storage/logs/.gitkeep
+/public/media/[0-9]*/

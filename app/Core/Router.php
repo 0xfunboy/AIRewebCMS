@@ -38,6 +38,12 @@ final class Router
     public function dispatch(string $method, string $uri): void
     {
         $path = parse_url($uri, PHP_URL_PATH) ?: '/';
+        if ($path !== '/') {
+            $path = rtrim($path, '/');
+            if ($path == '') {
+                $path = '/';
+            }
+        }
 
         $route = $this->findRoute($method, $path);
         if ($route === null) {

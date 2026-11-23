@@ -162,6 +162,25 @@ final class ContentRepository
     /**
      * @return array<int, array{group_key:string,title:string,items:array<int,array>}> 
      */
+
+    public function getLegalSectionBySlug(string $slug): ?array
+    {
+        foreach ($this->getLegalSections() as $section) {
+            if ($this->slugify((string)($section['title'] ?? '')) === $slug) {
+                return $section;
+            }
+        }
+
+        return null;
+    }
+
+    private function slugify(string $value): string
+    {
+        $value = strtolower(trim($value));
+        $value = preg_replace('/[^a-z0-9]+/i', '-', $value) ?? '';
+        return trim($value, '-');
+    }
+
     public function getNavigation(string $menuKey): array
     {
         $menu = $menuKey === 'footer' ? 'footer' : 'header';

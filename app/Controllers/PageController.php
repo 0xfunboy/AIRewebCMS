@@ -154,6 +154,23 @@ final class PageController extends Controller
         ]);
     }
 
+    public function legalSection(string $slug): void
+    {
+        $settings = $this->content->getSettings();
+        $section = $this->content->getLegalSectionBySlug($slug);
+
+        if (!$section) {
+            http_response_code(404);
+            $this->view('public/not-found');
+            return;
+        }
+
+        $this->view('public/legal-section', [
+            'settings' => $settings,
+            'section' => $section,
+        ]);
+    }
+
     public function faq(): void
     {
         $faqs = $this->content->getFaqItems();

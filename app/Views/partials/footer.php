@@ -43,9 +43,9 @@ $defaultColumns = [
     'footer_legal' => [
         'title' => 'Legal',
         'items' => [
-            ['label' => 'Terms of Service', 'url' => '/legal'],
-            ['label' => 'Privacy Policy', 'url' => '/legal'],
-            ['label' => 'Cookie Policy', 'url' => '/legal'],
+            ['label' => 'Terms of Service', 'url' => '/legal/terms-of-service'],
+            ['label' => 'Privacy Policy', 'url' => '/legal/privacy-policy'],
+            ['label' => 'Cookie Notice', 'url' => '/legal/cookie-notice'],
         ],
     ],
 ];
@@ -63,10 +63,25 @@ $defaultSocial = [
 $normalizeItems = static function (array $items): array {
     $normalized = [];
     foreach ($items as $item) {
+        $label = (string)($item['label'] ?? '');
+        $url = (string)($item['url'] ?? '#');
+        $isExternal = !empty($item['is_external']);
+
+        if (!$isExternal && ($url === '/legal' || $url === '/legal/')) {
+            $lookup = strtolower(trim($label));
+            if ($lookup === 'terms of service') {
+                $url = '/legal/terms-of-service';
+            } elseif ($lookup === 'privacy policy') {
+                $url = '/legal/privacy-policy';
+            } elseif ($lookup === 'cookie policy' || $lookup === 'cookie notice') {
+                $url = '/legal/cookie-notice';
+            }
+        }
+
         $normalized[] = [
-            'label' => (string)($item['label'] ?? ''),
-            'url' => (string)($item['url'] ?? '#'),
-            'is_external' => !empty($item['is_external']),
+            'label' => $label,
+            'url' => $url,
+            'is_external' => $isExternal,
             'icon_key' => $item['icon_key'] ?? null,
         ];
     }
